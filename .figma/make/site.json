@@ -1,0 +1,10 @@
+{
+  "description": "Transforms markdown instructions into actionable workflows, enabling users to automate tasks efficiently and streamline project management.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
