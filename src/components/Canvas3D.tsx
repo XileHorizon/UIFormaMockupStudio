@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, type PointerEvent } from 'react'
+import { Suspense, useRef, useCallback, useEffect, type PointerEvent } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { ContactShadows, OrbitControls } from '@react-three/drei'
 import { useEditor } from '../store'
@@ -119,28 +119,30 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             <directionalLight position={[6, 2, 4]} intensity={0.85 * lighting.intensity} color="#b8d2ff" />
             {lighting.rimLight && <spotLight position={[1, 5, -6]} intensity={3 * lighting.intensity} color="#c9d9ff" angle={0.55} penumbra={1} />}
 
-            {objects.map(obj => obj.visible && obj.elementType === 'device' && (obj.device?.type === 'monitor' || obj.device?.type === 'studio-display') ? (
-              <StudioMonitor3D
-                key={obj.id}
-                device={obj.device}
-                transform={obj.transform}
-                screenshot={obj.screenshot}
-                screenshotType={obj.screenshotType}
-                lighting={lighting}
-                selected={obj.id === selectedId}
-                onSelect={() => selectObject(obj.id)}
-              />
-            ) : obj.visible && obj.elementType === 'device' && obj.device?.type === 'macbook-air' ? (
-              <ClosedMacBook3D
-                key={obj.id}
-                device={obj.device}
-                transform={obj.transform}
-                screenshot={obj.screenshot}
-                screenshotType={obj.screenshotType}
-                selected={obj.id === selectedId}
-                onSelect={() => selectObject(obj.id)}
-              />
-            ) : null)}
+            <Suspense fallback={null}>
+              {objects.map(obj => obj.visible && obj.elementType === 'device' && (obj.device?.type === 'monitor' || obj.device?.type === 'studio-display') ? (
+                <StudioMonitor3D
+                  key={obj.id}
+                  device={obj.device}
+                  transform={obj.transform}
+                  screenshot={obj.screenshot}
+                  screenshotType={obj.screenshotType}
+                  lighting={lighting}
+                  selected={obj.id === selectedId}
+                  onSelect={() => selectObject(obj.id)}
+                />
+              ) : obj.visible && obj.elementType === 'device' && obj.device?.type === 'macbook-air' ? (
+                <ClosedMacBook3D
+                  key={obj.id}
+                  device={obj.device}
+                  transform={obj.transform}
+                  screenshot={obj.screenshot}
+                  screenshotType={obj.screenshotType}
+                  selected={obj.id === selectedId}
+                  onSelect={() => selectObject(obj.id)}
+                />
+              ) : null)}
+            </Suspense>
 
             <ContactShadows position={[0, -2.6, 0]} opacity={lighting.shadowOpacity} scale={11} blur={2.8} far={5} resolution={1024} />
             <OrbitControls makeDefault enableDamping dampingFactor={0.08} minDistance={7} maxDistance={18} minPolarAngle={Math.PI * 0.28} maxPolarAngle={Math.PI * 0.72} />
