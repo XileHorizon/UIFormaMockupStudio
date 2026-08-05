@@ -4,7 +4,7 @@ import { ContactShadows, OrbitControls } from '@react-three/drei'
 import { useEditor } from '../store'
 import DeviceMockup from './DeviceMockup'
 import StudioMonitor3D from './StudioMonitor3D'
-import MacBookAir3D from './MacBookAir3D'
+import ClosedMacBook3D from './ClosedMacBook3D'
 import TextElement from './TextElement'
 import ShapeElement from './ShapeElement'
 import type { SceneObject } from '../types'
@@ -131,7 +131,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                 onSelect={() => selectObject(obj.id)}
               />
             ) : obj.visible && obj.elementType === 'device' && obj.device?.type === 'macbook-air' ? (
-              <MacBookAir3D
+              <ClosedMacBook3D
                 key={obj.id}
                 device={obj.device}
                 transform={obj.transform}
