@@ -58,7 +58,7 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
               <meshPhysicalMaterial color={bodyColor} metalness={0.9} roughness={roughness + 0.04} clearcoat={0.16} clearcoatRoughness={0.26} />
             </mesh>
           </group>
-          <mesh position={[0, -0.126, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <mesh position={[0, -0.226, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <planeGeometry args={[5.52, 3.48]} />
             <meshBasicMaterial
               map={texture}
@@ -67,7 +67,7 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
             />
           </mesh>
           {device.showReflection && (
-            <mesh position={[0, -0.129, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <mesh position={[0, -0.229, 0]} rotation={[Math.PI / 2, 0, 0]}>
               <planeGeometry args={[5.52, 3.48]} />
               <meshPhysicalMaterial transparent opacity={0.055} color="#dcecff" roughness={0.06} />
             </mesh>
