@@ -24,7 +24,9 @@ type MacBookGLTF = {
 }
 
 export default function ClosedMacBook3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
-  const { nodes } = useGLTF('/models/macbook-closed.glb') as unknown as MacBookGLTF
+  // This GLB uses plain glTF buffers. Keep Draco and Meshopt disabled so the
+  // loader does not initialize unnecessary WASM decoders under the site CSP.
+  const { nodes } = useGLTF('/models/macbook-closed.glb', false, false) as unknown as MacBookGLTF
   const texture = useScreenTexture(screenshot, screenshotType)
   const bodyColor = BODY_COLORS[device.color]
   const roughness = device.materialPreset === 'matte' ? 0.62 : 0.27
@@ -85,4 +87,4 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
   )
 }
 
-useGLTF.preload('/models/macbook-closed.glb')
+useGLTF.preload('/models/macbook-closed.glb', false, false)
