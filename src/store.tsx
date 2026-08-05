@@ -23,7 +23,7 @@ export function sanitizeObjects(objects: SceneObject[]): SceneObject[] {
 
 // ── Initial state ─────────────────────────────────────────────────────────────
 
-const initialObject = createSceneObject('phone', 'Phone 1', { rotX: -12, rotY: 24, rotZ: 3 })
+const initialObject = createSceneObject('monitor', 'Studio Monitor 1', { rotX: -3, rotY: 12, rotZ: 0, scale: 1.08 })
 
 const initialState: AppState = {
   objects: [initialObject],

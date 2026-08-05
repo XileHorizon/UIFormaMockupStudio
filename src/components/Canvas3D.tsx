@@ -1,6 +1,9 @@
 import { useRef, useCallback, useEffect, type PointerEvent } from 'react'
+import { Canvas } from '@react-three/fiber'
+import { ContactShadows, OrbitControls } from '@react-three/drei'
 import { useEditor } from '../store'
 import DeviceMockup from './DeviceMockup'
+import StudioMonitor3D from './StudioMonitor3D'
 import TextElement from './TextElement'
 import ShapeElement from './ShapeElement'
 import type { SceneObject } from '../types'
@@ -102,12 +105,44 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
           <div data-canvas-bg="true" style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }} />
         )}
 
-        <div data-canvas-bg="true" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <Canvas
+            shadows
+            dpr={[1, 2]}
+            gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+            camera={{ position: [0, 0.1, 11.5], fov: 38, near: 0.1, far: 100 }}
+            onPointerMissed={() => selectObject(null)}
+          >
+            <ambientLight intensity={0.45 * lighting.ambientIntensity + 0.18} />
+            <directionalLight position={[-5, 8, 7]} intensity={2.2 * lighting.intensity} castShadow shadow-mapSize={[2048, 2048]} />
+            <directionalLight position={[6, 2, 4]} intensity={0.85 * lighting.intensity} color="#b8d2ff" />
+            {lighting.rimLight && <spotLight position={[1, 5, -6]} intensity={3 * lighting.intensity} color="#c9d9ff" angle={0.55} penumbra={1} />}
+
+            {objects.map(obj => obj.visible && obj.elementType === 'device' && obj.device?.type === 'monitor' ? (
+              <StudioMonitor3D
+                key={obj.id}
+                device={obj.device}
+                transform={obj.transform}
+                screenshot={obj.screenshot}
+                screenshotType={obj.screenshotType}
+                lighting={lighting}
+                selected={obj.id === selectedId}
+                onSelect={() => selectObject(obj.id)}
+              />
+            ) : null)}
+
+            <ContactShadows position={[0, -2.6, 0]} opacity={lighting.shadowOpacity} scale={11} blur={2.8} far={5} resolution={1024} />
+            <OrbitControls makeDefault enableDamping dampingFactor={0.08} minDistance={7} maxDistance={18} minPolarAngle={Math.PI * 0.28} maxPolarAngle={Math.PI * 0.72} />
+          </Canvas>
+        </div>
+
+        <div data-canvas-bg="true" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
           {objects.map(obj => {
             if (!obj.visible) return null
             if (!obj.transform || typeof obj.transform.rotX !== 'number') return null
             const isSelected = obj.id === selectedId
             const et = obj.elementType ?? 'device'
+            if (et === 'device' && obj.device?.type === 'monitor') return null
 
             return (
               <div
@@ -116,6 +151,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                   position: 'absolute', left: '50%', top: '50%',
                   transform: `translate(-50%, -50%) translate(${obj.transform.posX}px, ${obj.transform.posY}px) scale(${obj.transform.scale})`,
                   cursor: obj.locked ? 'not-allowed' : 'grab',
+                  pointerEvents: 'auto',
                 }}
                 onPointerDown={e => startObjectDrag(e, obj)}
               >
@@ -161,7 +197,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
 
       {/* Canvas hints */}
       <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6, pointerEvents: 'none' }}>
-        {['Drag to rotate', 'Scroll to zoom', 'Esc to deselect'].map(hint => (
+        {['Orbit to rotate', 'Scroll to zoom', 'Esc to deselect'].map(hint => (
           <div key={hint} style={{ padding: '4px 10px', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', borderRadius: 6, fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-mono)', border: '1px solid rgba(255,255,255,0.06)', whiteSpace: 'nowrap' }}>
             {hint}
           </div>
