@@ -1,4 +1,4 @@
-import { useGLTF } from '@react-three/drei'
+import { Edges, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
 import { useScreenTexture } from './StudioMonitor3D'
@@ -46,21 +46,21 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
       }}
     >
       {/* The supplied CAD base stays horizontal. Coordinates are millimetres. */}
-      <group rotation={[-Math.PI / 2, 0, 0]} scale={0.0197} position={[0, 0, 0]}>
+      <group rotation={[Math.PI / 2, 0, 0]} scale={0.0197} position={[0, 0, 0]}>
         <mesh geometry={nodes.Macbook_Base.geometry} castShadow receiveShadow>
           <meshPhysicalMaterial color={bodyColor} metalness={0.92} roughness={roughness} clearcoat={0.18} clearcoatRoughness={0.24} />
         </mesh>
       </group>
 
       {/* Pivot the separate lid mesh around the actual rear edge. */}
-      <group position={[0, 0, 2.118]} rotation={[THREE.MathUtils.degToRad(100), 0, 0]}>
-        <group position={[0, 0, -2.118]}>
-          <group rotation={[-Math.PI / 2, 0, 0]} scale={0.0197}>
+      <group position={[0, 0, -2.118]} rotation={[THREE.MathUtils.degToRad(-100), 0, 0]}>
+        <group position={[0, 0, 2.118]}>
+          <group rotation={[Math.PI / 2, 0, 0]} scale={0.0197}>
             <mesh geometry={nodes.Macbook_Screen.geometry} castShadow receiveShadow>
               <meshPhysicalMaterial color={bodyColor} metalness={0.9} roughness={roughness + 0.04} clearcoat={0.16} clearcoatRoughness={0.26} />
             </mesh>
           </group>
-          <mesh position={[0, -0.128, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <mesh position={[0, 0.128, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[5.52, 3.48]} />
             <meshBasicMaterial
               map={texture}
@@ -69,7 +69,7 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
             />
           </mesh>
           {device.showReflection && (
-            <mesh position={[0, -0.125, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <mesh position={[0, 0.131, 0]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[5.52, 3.48]} />
               <meshPhysicalMaterial transparent opacity={0.055} color="#dcecff" roughness={0.06} />
             </mesh>
@@ -78,9 +78,10 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
       </group>
 
       {selected && (
-        <mesh position={[0, 1.85, 2.52]}>
-          <boxGeometry args={[6.12, 4.2, 1.25]} />
-          <meshBasicMaterial color="#3b7ef8" wireframe transparent opacity={0.42} depthTest={false} />
+        <mesh position={[0, 1.76, -1.72]}>
+          <boxGeometry args={[6.12, 3.85, 4.55]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+          <Edges color="#3b7ef8" />
         </mesh>
       )}
     </group>
