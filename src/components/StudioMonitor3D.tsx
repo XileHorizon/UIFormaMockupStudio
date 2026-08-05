@@ -20,7 +20,7 @@ const BODY_COLORS = {
   gold: '#d3b997',
 } as const
 
-function useScreenTexture(source: string | null, type: ScreenContentType) {
+export function useScreenTexture(source: string | null, type: ScreenContentType) {
   const placeholder = useMemo(() => {
     const canvas = document.createElement('canvas')
     canvas.width = 1400

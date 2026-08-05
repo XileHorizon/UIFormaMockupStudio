@@ -83,13 +83,19 @@ function offsetForNew(objects: SceneObject[]): Partial<Transform> {
   return { posX: (n % 5) * 30 - 60, posY: (n % 3) * 20 - 20 }
 }
 
+const DEVICE_NAMES: Partial<Record<DeviceType, string>> = {
+  'studio-display': 'Studio Display',
+  'macbook-air': 'MacBook Air',
+}
+
 // ── Reducer ───────────────────────────────────────────────────────────────────
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'ADD_DEVICE': {
       const count = state.objects.filter(o => o.elementType === 'device' && o.device?.type === action.payload.deviceType).length + 1
-      const obj = createSceneObject(action.payload.deviceType, `${action.payload.deviceType.charAt(0).toUpperCase() + action.payload.deviceType.slice(1)} ${count}`, offsetForNew(state.objects))
+      const label = DEVICE_NAMES[action.payload.deviceType] ?? action.payload.deviceType.charAt(0).toUpperCase() + action.payload.deviceType.slice(1)
+      const obj = createSceneObject(action.payload.deviceType, `${label} ${count}`, offsetForNew(state.objects))
       return { ...state, objects: [...state.objects, obj], selectedId: obj.id }
     }
     case 'ADD_TEXT': {

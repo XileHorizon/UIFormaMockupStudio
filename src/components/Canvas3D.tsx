@@ -4,6 +4,7 @@ import { ContactShadows, OrbitControls } from '@react-three/drei'
 import { useEditor } from '../store'
 import DeviceMockup from './DeviceMockup'
 import StudioMonitor3D from './StudioMonitor3D'
+import MacBookAir3D from './MacBookAir3D'
 import TextElement from './TextElement'
 import ShapeElement from './ShapeElement'
 import type { SceneObject } from '../types'
@@ -118,7 +119,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             <directionalLight position={[6, 2, 4]} intensity={0.85 * lighting.intensity} color="#b8d2ff" />
             {lighting.rimLight && <spotLight position={[1, 5, -6]} intensity={3 * lighting.intensity} color="#c9d9ff" angle={0.55} penumbra={1} />}
 
-            {objects.map(obj => obj.visible && obj.elementType === 'device' && obj.device?.type === 'monitor' ? (
+            {objects.map(obj => obj.visible && obj.elementType === 'device' && (obj.device?.type === 'monitor' || obj.device?.type === 'studio-display') ? (
               <StudioMonitor3D
                 key={obj.id}
                 device={obj.device}
@@ -126,6 +127,16 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                 screenshot={obj.screenshot}
                 screenshotType={obj.screenshotType}
                 lighting={lighting}
+                selected={obj.id === selectedId}
+                onSelect={() => selectObject(obj.id)}
+              />
+            ) : obj.visible && obj.elementType === 'device' && obj.device?.type === 'macbook-air' ? (
+              <MacBookAir3D
+                key={obj.id}
+                device={obj.device}
+                transform={obj.transform}
+                screenshot={obj.screenshot}
+                screenshotType={obj.screenshotType}
                 selected={obj.id === selectedId}
                 onSelect={() => selectObject(obj.id)}
               />
@@ -142,7 +153,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             if (!obj.transform || typeof obj.transform.rotX !== 'number') return null
             const isSelected = obj.id === selectedId
             const et = obj.elementType ?? 'device'
-            if (et === 'device' && obj.device?.type === 'monitor') return null
+            if (et === 'device' && ['monitor', 'studio-display', 'macbook-air'].includes(obj.device?.type)) return null
 
             return (
               <div

@@ -1,7 +1,7 @@
 // ── Element types ─────────────────────────────────────────────────────────────
 
 export type ElementType = 'device' | 'text' | 'shape'
-export type DeviceType = 'phone' | 'laptop' | 'tablet' | 'monitor' | 'browser'
+export type DeviceType = 'phone' | 'laptop' | 'tablet' | 'monitor' | 'studio-display' | 'macbook-air' | 'browser'
 export type DeviceColor = 'space-black' | 'silver' | 'white' | 'gold'
 export type ShapeType = 'card' | 'ring' | 'blob' | 'pedestal' | 'plane'
 export type ScreenContentType = 'image' | 'video' | 'gif' | null

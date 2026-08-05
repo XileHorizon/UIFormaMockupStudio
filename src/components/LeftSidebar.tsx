@@ -4,11 +4,13 @@ import type { DeviceType, AnglePreset, SceneObject, ShapeType } from '../types'
 import { ANGLE_PRESETS } from '../types'
 
 const DEVICE_TYPES: { type: DeviceType; label: string }[] = [
-  { type: 'phone',   label: 'Phone'   },
-  { type: 'laptop',  label: 'Laptop'  },
-  { type: 'tablet',  label: 'Tablet'  },
-  { type: 'browser', label: 'Browser' },
-  { type: 'monitor', label: 'Monitor' },
+  { type: 'studio-display', label: 'Studio Display' },
+  { type: 'macbook-air',    label: 'MacBook Air'    },
+  { type: 'phone',          label: 'Phone'          },
+  { type: 'laptop',         label: 'Laptop'         },
+  { type: 'tablet',         label: 'Tablet'         },
+  { type: 'browser',        label: 'Browser'        },
+  { type: 'monitor',        label: 'Monitor'        },
 ]
 
 const SHAPE_TYPES: { type: ShapeType; label: string }[] = [
