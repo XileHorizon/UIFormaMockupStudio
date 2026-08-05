@@ -1,7 +1,8 @@
 {
-  "description": "Transforms markdown instructions into actionable workflows, enabling users to automate tasks efficiently and streamline project management.",
+  "title": "UIForma Mockup Studio",
+  "description": "Create polished 3D device mockups for websites, apps, and product presentations.",
   "robots": {
-    "index": false
+    "index": true
   },
   "accessibility": {
     "addBypassLinks": false,
