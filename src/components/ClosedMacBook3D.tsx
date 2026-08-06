@@ -1,4 +1,5 @@
 import { Edges, useGLTF } from '@react-three/drei'
+import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
 import { useScreenTexture } from './StudioMonitor3D'
@@ -13,27 +14,98 @@ interface Props {
 }
 
 const BODY_COLORS = {
-  'space-black': '#24262a',
-  silver: '#c9cbce',
-  white: '#e1e2e4',
-  gold: '#c8aa84',
+  'space-black': '#292b2e',
+  silver: '#c9cbcd',
+  white: '#e4e5e5',
+  gold: '#c7a981',
 } as const
 
-type MacBookGLTF = {
-  nodes: Record<string, THREE.Mesh>
+function addPlanarScreenUvs(geometry: THREE.BufferGeometry) {
+  geometry.computeBoundingBox()
+  const bounds = geometry.boundingBox
+  const positions = geometry.getAttribute('position')
+  if (!bounds || !positions) return
+
+  const width = bounds.max.x - bounds.min.x
+  const height = bounds.max.y - bounds.min.y
+  const uv = new Float32Array(positions.count * 2)
+
+  for (let index = 0; index < positions.count; index += 1) {
+    uv[index * 2] = (positions.getX(index) - bounds.min.x) / width
+    uv[index * 2 + 1] = (positions.getY(index) - bounds.min.y) / height
+  }
+
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
 }
 
 export default function ClosedMacBook3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
-  // This GLB uses plain glTF buffers. Keep Draco and Meshopt disabled so the
-  // loader does not initialize unnecessary WASM decoders under the site CSP.
-  const { nodes } = useGLTF('/models/macbook-closed.glb', false, false) as unknown as MacBookGLTF
+  const { scene } = useGLTF('/models/macbook-closed.glb', false, false)
   const texture = useScreenTexture(screenshot, screenshotType)
   const bodyColor = BODY_COLORS[device.color]
-  const roughness = device.materialPreset === 'matte' ? 0.62 : 0.27
+  const roughness = device.materialPreset === 'matte' ? 0.5 : 0.24
+
+  const model = useMemo(() => {
+    const next = scene.clone(true)
+    const ownedGeometries: THREE.BufferGeometry[] = []
+    const ownedMaterials: THREE.Material[] = []
+
+    const material = (value: THREE.Material) => {
+      ownedMaterials.push(value)
+      return value
+    }
+
+    next.traverse(child => {
+      if (!(child instanceof THREE.Mesh)) return
+
+      child.castShadow = true
+      child.receiveShadow = true
+
+      if (child.name === 'Screen') {
+        child.geometry = child.geometry.clone()
+        ownedGeometries.push(child.geometry)
+        addPlanarScreenUvs(child.geometry)
+        child.material = material(new THREE.MeshBasicMaterial({
+          map: texture,
+          color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
+          toneMapped: false,
+        }))
+        return
+      }
+
+      if (child.name === 'KeyboardKeys') {
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#111214', metalness: 0.08, roughness: 0.34, clearcoat: 0.22 }))
+      } else if (child.name === 'KeyboardBase') {
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#191b1e', metalness: 0.35, roughness: 0.32, clearcoat: 0.12 }))
+      } else if (child.name === 'Trackpad') {
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: bodyColor, metalness: 0.72, roughness: 0.22, clearcoat: 0.3, clearcoatRoughness: 0.18 }))
+      } else if (child.name.startsWith('Foot')) {
+        child.material = material(new THREE.MeshStandardMaterial({ color: '#171819', metalness: 0.02, roughness: 0.82 }))
+      } else if (child.name === 'Apple') {
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#d9dadd', metalness: 0.82, roughness: 0.16, clearcoat: 0.5, clearcoatRoughness: 0.12 }))
+      } else {
+        child.material = material(new THREE.MeshPhysicalMaterial({
+          color: bodyColor,
+          metalness: 0.91,
+          roughness,
+          clearcoat: 0.16,
+          clearcoatRoughness: 0.22,
+        }))
+      }
+    })
+
+    next.userData.ownedGeometries = ownedGeometries
+    next.userData.ownedMaterials = ownedMaterials
+    return next
+  }, [bodyColor, device.screenBrightness, roughness, scene, texture])
+
+  useEffect(() => () => {
+    for (const geometry of model.userData.ownedGeometries as THREE.BufferGeometry[]) geometry.dispose()
+    for (const material of model.userData.ownedMaterials as THREE.Material[]) material.dispose()
+  }, [model])
 
   return (
     <group
-      position={[transform.posX / 95, -transform.posY / 95 - 0.45, 0]}
+      position={[transform.posX / 95, -transform.posY / 95 - 2.05, 0.7]}
       rotation={[
         THREE.MathUtils.degToRad(transform.rotX),
         THREE.MathUtils.degToRad(transform.rotY),
@@ -45,41 +117,18 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
         onSelect()
       }}
     >
-      {/* The supplied CAD base stays horizontal. Coordinates are millimetres. */}
-      <group rotation={[Math.PI / 2, 0, 0]} scale={0.0197} position={[0, 0, 0]}>
-        <mesh geometry={nodes.Macbook_Base.geometry} castShadow receiveShadow>
-          <meshPhysicalMaterial color={bodyColor} metalness={0.92} roughness={roughness} clearcoat={0.18} clearcoatRoughness={0.24} />
-        </mesh>
-      </group>
+      <primitive object={model} scale={0.0202} rotation={[0, Math.PI, 0]} />
 
-      {/* Pivot the separate lid mesh around the actual rear edge. */}
-      <group position={[0, 0, -2.118]} rotation={[THREE.MathUtils.degToRad(-100), 0, 0]}>
-        <group position={[0, 0, 2.118]}>
-          <group rotation={[Math.PI / 2, 0, 0]} scale={0.0197}>
-            <mesh geometry={nodes.Macbook_Screen.geometry} castShadow receiveShadow>
-              <meshPhysicalMaterial color={bodyColor} metalness={0.9} roughness={roughness + 0.04} clearcoat={0.16} clearcoatRoughness={0.26} />
-            </mesh>
-          </group>
-          <mesh position={[0, 0.128, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[5.52, 3.48]} />
-            <meshBasicMaterial
-              map={texture}
-              toneMapped={false}
-              color={new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness)}
-            />
-          </mesh>
-          {device.showReflection && (
-            <mesh position={[0, 0.131, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[5.52, 3.48]} />
-              <meshPhysicalMaterial transparent opacity={0.055} color="#dcecff" roughness={0.06} />
-            </mesh>
-          )}
-        </group>
-      </group>
+      {device.showReflection && (
+        <mesh position={[0, 2.42, 3.02]} rotation={[THREE.MathUtils.degToRad(-10), Math.PI, 0]}>
+          <planeGeometry args={[5.77, 3.78]} />
+          <meshPhysicalMaterial transparent opacity={0.045} color="#dcecff" roughness={0.04} depthWrite={false} />
+        </mesh>
+      )}
 
       {selected && (
-        <mesh position={[0, 1.76, -1.72]}>
-          <boxGeometry args={[6.12, 3.85, 4.55]} />
+        <mesh position={[0, 2.18, 0]}>
+          <boxGeometry args={[6.25, 4.55, 4.9]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
           <Edges color="#3b7ef8" />
         </mesh>
