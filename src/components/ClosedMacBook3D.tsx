@@ -39,7 +39,7 @@ function addPlanarScreenUvs(geometry: THREE.BufferGeometry) {
 }
 
 export default function ClosedMacBook3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
-  const { scene } = useGLTF('/models/macbook-closed.glb', false, false)
+  const { scene } = useGLTF('/models/macbook-open.glb', false, false)
   const texture = useScreenTexture(screenshot, screenshotType)
   const bodyColor = BODY_COLORS[device.color]
   const roughness = device.materialPreset === 'matte' ? 0.5 : 0.24
@@ -137,4 +137,4 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
   )
 }
 
-useGLTF.preload('/models/macbook-closed.glb', false, false)
+useGLTF.preload('/models/macbook-open.glb', false, false)
