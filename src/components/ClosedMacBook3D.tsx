@@ -73,22 +73,24 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
       }
 
       if (child.name === 'KeyboardKeys') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#111214', metalness: 0.08, roughness: 0.34, clearcoat: 0.22 }))
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#0c0d0f', metalness: 0.04, roughness: 0.28, clearcoat: 0.32, clearcoatRoughness: 0.2 }))
       } else if (child.name === 'KeyboardBase') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#191b1e', metalness: 0.35, roughness: 0.32, clearcoat: 0.12 }))
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#15171a', metalness: 0.52, roughness: 0.3, clearcoat: 0.14, clearcoatRoughness: 0.24 }))
       } else if (child.name === 'Trackpad') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: bodyColor, metalness: 0.72, roughness: 0.22, clearcoat: 0.3, clearcoatRoughness: 0.18 }))
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: bodyColor, metalness: 0.74, roughness: 0.19, clearcoat: 0.36, clearcoatRoughness: 0.16, sheen: 0.08, sheenColor: new THREE.Color('#ffffff') }))
       } else if (child.name.startsWith('Foot')) {
-        child.material = material(new THREE.MeshStandardMaterial({ color: '#171819', metalness: 0.02, roughness: 0.82 }))
+        child.material = material(new THREE.MeshStandardMaterial({ color: '#111214', metalness: 0.01, roughness: 0.9 }))
       } else if (child.name === 'Apple') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#d9dadd', metalness: 0.82, roughness: 0.16, clearcoat: 0.5, clearcoatRoughness: 0.12 }))
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#e1e3e6', metalness: 0.94, roughness: 0.1, clearcoat: 0.62, clearcoatRoughness: 0.08 }))
       } else {
         child.material = material(new THREE.MeshPhysicalMaterial({
           color: bodyColor,
-          metalness: 0.91,
+          metalness: 0.96,
           roughness,
-          clearcoat: 0.16,
-          clearcoatRoughness: 0.22,
+          clearcoat: 0.2,
+          clearcoatRoughness: 0.18,
+          anisotropy: 0.18,
+          anisotropyRotation: Math.PI / 2,
         }))
       }
     })

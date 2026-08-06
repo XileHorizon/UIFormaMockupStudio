@@ -1,6 +1,7 @@
 import { Suspense, useRef, useCallback, useEffect, type PointerEvent } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { ContactShadows, OrbitControls } from '@react-three/drei'
+import { ContactShadows, Environment, OrbitControls } from '@react-three/drei'
+import * as THREE from 'three'
 import { useEditor } from '../store'
 import DeviceMockup from './DeviceMockup'
 import StudioMonitor3D from './StudioMonitor3D'
@@ -110,16 +111,36 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
           <Canvas
             shadows
             dpr={[1, 2]}
-            gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+            gl={{
+              antialias: true,
+              alpha: true,
+              preserveDrawingBuffer: true,
+              toneMapping: THREE.ACESFilmicToneMapping,
+              toneMappingExposure: 1.08,
+              outputColorSpace: THREE.SRGBColorSpace,
+            }}
             camera={{ position: [0, 0.1, 11.5], fov: 38, near: 0.1, far: 100 }}
             onPointerMissed={() => selectObject(null)}
           >
-            <ambientLight intensity={0.45 * lighting.ambientIntensity + 0.18} />
-            <directionalLight position={[-5, 8, 7]} intensity={2.2 * lighting.intensity} castShadow shadow-mapSize={[2048, 2048]} />
-            <directionalLight position={[6, 2, 4]} intensity={0.85 * lighting.intensity} color="#b8d2ff" />
-            {lighting.rimLight && <spotLight position={[1, 5, -6]} intensity={3 * lighting.intensity} color="#c9d9ff" angle={0.55} penumbra={1} />}
+            <ambientLight intensity={0.12 * lighting.ambientIntensity} />
+            <directionalLight
+              position={[-5, 8, 7]}
+              intensity={1.35 * lighting.intensity}
+              color="#fff8ef"
+              castShadow
+              shadow-mapSize={[2048, 2048]}
+              shadow-bias={-0.00015}
+              shadow-normalBias={0.025}
+            />
+            <directionalLight position={[6, 2, 4]} intensity={0.38 * lighting.intensity} color="#c5d8ff" />
+            {lighting.rimLight && <spotLight position={[1, 5, -6]} intensity={1.8 * lighting.intensity} color="#d6e4ff" angle={0.55} penumbra={1} />}
 
             <Suspense fallback={null}>
+              <Environment
+                files="/environments/studio_small_03_1k.hdr"
+                environmentIntensity={0.78 * lighting.intensity + 0.12}
+                environmentRotation={[0, -0.45, 0]}
+              />
               {objects.map(obj => obj.visible && obj.elementType === 'device' && (obj.device?.type === 'monitor' || obj.device?.type === 'studio-display') ? (
                 <StudioMonitor3D
                   key={obj.id}
@@ -144,7 +165,15 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
               ) : null)}
             </Suspense>
 
-            <ContactShadows position={[0, -2.6, 0]} opacity={lighting.shadowOpacity} scale={11} blur={2.8} far={5} resolution={1024} />
+            <ContactShadows
+              position={[0, -2.6, 0]}
+              opacity={lighting.shadowOpacity}
+              scale={11}
+              blur={1.8 + lighting.shadowSoftness * 1.8}
+              far={5}
+              resolution={1024}
+              color="#11141a"
+            />
             <OrbitControls makeDefault enableDamping dampingFactor={0.08} minDistance={7} maxDistance={18} minPolarAngle={Math.PI * 0.28} maxPolarAngle={Math.PI * 0.72} />
           </Canvas>
         </div>
