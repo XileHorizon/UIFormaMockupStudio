@@ -116,29 +116,29 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
               alpha: true,
               preserveDrawingBuffer: true,
               toneMapping: THREE.ACESFilmicToneMapping,
-              toneMappingExposure: 1.08,
+              toneMappingExposure: 0.86,
               outputColorSpace: THREE.SRGBColorSpace,
             }}
             camera={{ position: [0, 0.1, 11.5], fov: 38, near: 0.1, far: 100 }}
             onPointerMissed={() => selectObject(null)}
           >
-            <ambientLight intensity={0.12 * lighting.ambientIntensity} />
+            <ambientLight intensity={0.06 * lighting.ambientIntensity} />
             <directionalLight
               position={[-5, 8, 7]}
-              intensity={1.35 * lighting.intensity}
+              intensity={0.72 * lighting.intensity}
               color="#fff8ef"
               castShadow
               shadow-mapSize={[2048, 2048]}
               shadow-bias={-0.00015}
               shadow-normalBias={0.025}
             />
-            <directionalLight position={[6, 2, 4]} intensity={0.38 * lighting.intensity} color="#c5d8ff" />
-            {lighting.rimLight && <spotLight position={[1, 5, -6]} intensity={1.8 * lighting.intensity} color="#d6e4ff" angle={0.55} penumbra={1} />}
+            <directionalLight position={[6, 2, 4]} intensity={0.2 * lighting.intensity} color="#c5d8ff" />
+            {lighting.rimLight && <spotLight position={[1, 5, -6]} intensity={0.9 * lighting.intensity} color="#d6e4ff" angle={0.55} penumbra={1} />}
 
             <Suspense fallback={null}>
               <Environment
                 files="/environments/studio_small_03_1k.hdr"
-                environmentIntensity={0.78 * lighting.intensity + 0.12}
+                environmentIntensity={0.38 * lighting.intensity + 0.08}
                 environmentRotation={[0, -0.45, 0]}
               />
               {objects.map(obj => obj.visible && obj.elementType === 'device' && (obj.device?.type === 'monitor' || obj.device?.type === 'studio-display') ? (

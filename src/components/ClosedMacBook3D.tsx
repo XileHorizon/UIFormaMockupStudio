@@ -14,10 +14,10 @@ interface Props {
 }
 
 const BODY_COLORS = {
-  'space-black': '#292b2e',
-  silver: '#c9cbcd',
-  white: '#e4e5e5',
-  gold: '#c7a981',
+  'space-black': '#242629',
+  silver: '#adb0b4',
+  white: '#d0d2d3',
+  gold: '#ad9271',
 } as const
 
 function addPlanarScreenUvs(geometry: THREE.BufferGeometry) {
@@ -42,7 +42,7 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
   const { scene } = useGLTF('/models/macbook-open.glb', false, false)
   const texture = useScreenTexture(screenshot, screenshotType)
   const bodyColor = BODY_COLORS[device.color]
-  const roughness = device.materialPreset === 'matte' ? 0.5 : 0.24
+  const roughness = device.materialPreset === 'matte' ? 0.62 : 0.46
 
   const model = useMemo(() => {
     const next = scene.clone(true)
@@ -73,24 +73,25 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
       }
 
       if (child.name === 'KeyboardKeys') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#0c0d0f', metalness: 0.04, roughness: 0.28, clearcoat: 0.32, clearcoatRoughness: 0.2 }))
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#0c0d0f', metalness: 0.02, roughness: 0.43, clearcoat: 0.08, clearcoatRoughness: 0.34, envMapIntensity: 0.6 }))
       } else if (child.name === 'KeyboardBase') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#15171a', metalness: 0.52, roughness: 0.3, clearcoat: 0.14, clearcoatRoughness: 0.24 }))
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#15171a', metalness: 0.38, roughness: 0.46, clearcoat: 0.04, clearcoatRoughness: 0.4, envMapIntensity: 0.6 }))
       } else if (child.name === 'Trackpad') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: bodyColor, metalness: 0.74, roughness: 0.19, clearcoat: 0.36, clearcoatRoughness: 0.16, sheen: 0.08, sheenColor: new THREE.Color('#ffffff') }))
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: bodyColor, metalness: 0.48, roughness: 0.38, clearcoat: 0.08, clearcoatRoughness: 0.32, envMapIntensity: 0.62 }))
       } else if (child.name.startsWith('Foot')) {
         child.material = material(new THREE.MeshStandardMaterial({ color: '#111214', metalness: 0.01, roughness: 0.9 }))
       } else if (child.name === 'Apple') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#e1e3e6', metalness: 0.94, roughness: 0.1, clearcoat: 0.62, clearcoatRoughness: 0.08 }))
+        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#c7c9cc', metalness: 0.82, roughness: 0.28, clearcoat: 0.12, clearcoatRoughness: 0.22, envMapIntensity: 0.7 }))
       } else {
         child.material = material(new THREE.MeshPhysicalMaterial({
           color: bodyColor,
-          metalness: 0.96,
+          metalness: 0.78,
           roughness,
-          clearcoat: 0.2,
-          clearcoatRoughness: 0.18,
-          anisotropy: 0.18,
+          clearcoat: 0.035,
+          clearcoatRoughness: 0.42,
+          anisotropy: 0.08,
           anisotropyRotation: Math.PI / 2,
+          envMapIntensity: 0.62,
         }))
       }
     })

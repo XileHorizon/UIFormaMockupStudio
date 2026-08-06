@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { toPng, toJpeg, toBlob } from 'html-to-image'
+import { useEditor } from '../store'
 
 interface Props {
   canvasRef: React.RefObject<HTMLDivElement | null>
@@ -10,10 +11,22 @@ type Format = 'png' | 'jpeg' | 'webp'
 type Scale = 1 | 2 | 3 | 4
 
 export default function ExportModal({ canvasRef, onClose }: Props) {
+  const { state, selectObject } = useEditor()
   const [format, setFormat] = useState<Format>('png')
   const [scale, setScale] = useState<Scale>(2)
   const [exporting, setExporting] = useState(false)
   const [done, setDone] = useState(false)
+
+  const withoutSelection = async <T,>(capture: () => Promise<T>) => {
+    const previousSelection = state.selectedId
+    selectObject(null)
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    try {
+      return await capture()
+    } finally {
+      selectObject(previousSelection)
+    }
+  }
 
   const handleExport = async () => {
     if (!canvasRef.current) return
@@ -27,9 +40,9 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
 
       let dataUrl: string
       if (format === 'jpeg') {
-        dataUrl = await toJpeg(canvasRef.current, { ...options, quality: 0.95, backgroundColor: '#ffffff' })
+        dataUrl = await withoutSelection(() => toJpeg(canvasRef.current!, { ...options, quality: 0.95, backgroundColor: '#ffffff' }))
       } else {
-        dataUrl = await toPng(canvasRef.current, options)
+        dataUrl = await withoutSelection(() => toPng(canvasRef.current!, options))
       }
 
       const link = document.createElement('a')
@@ -49,7 +62,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
     if (!canvasRef.current) return
     setExporting(true)
     try {
-      const blob = await toBlob(canvasRef.current, { pixelRatio: scale })
+      const blob = await withoutSelection(() => toBlob(canvasRef.current!, { pixelRatio: scale }))
       if (blob && navigator.clipboard?.write) {
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': blob }),
