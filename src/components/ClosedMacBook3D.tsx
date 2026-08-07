@@ -13,40 +13,12 @@ interface Props {
   onSelect: () => void
 }
 
-const BODY_COLORS = {
-  'space-black': '#242629',
-  silver: '#adb0b4',
-  white: '#d0d2d3',
-  gold: '#ad9271',
-} as const
-
-function addPlanarScreenUvs(geometry: THREE.BufferGeometry) {
-  geometry.computeBoundingBox()
-  const bounds = geometry.boundingBox
-  const positions = geometry.getAttribute('position')
-  if (!bounds || !positions) return
-
-  const width = bounds.max.x - bounds.min.x
-  const height = bounds.max.y - bounds.min.y
-  const uv = new Float32Array(positions.count * 2)
-
-  for (let index = 0; index < positions.count; index += 1) {
-    uv[index * 2] = (positions.getX(index) - bounds.min.x) / width
-    uv[index * 2 + 1] = (positions.getY(index) - bounds.min.y) / height
-  }
-
-  geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
-}
-
 export default function ClosedMacBook3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/macbook-open.glb', false, false)
   const texture = useScreenTexture(screenshot, screenshotType)
-  const bodyColor = BODY_COLORS[device.color]
-  const roughness = device.materialPreset === 'matte' ? 0.62 : 0.46
 
   const model = useMemo(() => {
     const next = scene.clone(true)
-    const ownedGeometries: THREE.BufferGeometry[] = []
     const ownedMaterials: THREE.Material[] = []
 
     const material = (value: THREE.Material) => {
@@ -60,49 +32,22 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
       child.castShadow = true
       child.receiveShadow = true
 
-      if (child.name === 'Screen') {
-        child.geometry = child.geometry.clone()
-        ownedGeometries.push(child.geometry)
-        addPlanarScreenUvs(child.geometry)
-        child.material = material(new THREE.MeshBasicMaterial({
-          map: texture,
-          color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
-          toneMapped: false,
-        }))
-        return
-      }
-
-      if (child.name === 'KeyboardKeys') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#0c0d0f', metalness: 0.02, roughness: 0.43, clearcoat: 0.08, clearcoatRoughness: 0.34, envMapIntensity: 0.6 }))
-      } else if (child.name === 'KeyboardBase') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#15171a', metalness: 0.38, roughness: 0.46, clearcoat: 0.04, clearcoatRoughness: 0.4, envMapIntensity: 0.6 }))
-      } else if (child.name === 'Trackpad') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: bodyColor, metalness: 0.48, roughness: 0.38, clearcoat: 0.08, clearcoatRoughness: 0.32, envMapIntensity: 0.62 }))
-      } else if (child.name.startsWith('Foot')) {
-        child.material = material(new THREE.MeshStandardMaterial({ color: '#111214', metalness: 0.01, roughness: 0.9 }))
-      } else if (child.name === 'Apple') {
-        child.material = material(new THREE.MeshPhysicalMaterial({ color: '#c7c9cc', metalness: 0.82, roughness: 0.28, clearcoat: 0.12, clearcoatRoughness: 0.22, envMapIntensity: 0.7 }))
-      } else {
-        child.material = material(new THREE.MeshPhysicalMaterial({
-          color: bodyColor,
-          metalness: 0.78,
-          roughness,
-          clearcoat: 0.035,
-          clearcoatRoughness: 0.42,
-          anisotropy: 0.08,
-          anisotropyRotation: Math.PI / 2,
-          envMapIntensity: 0.62,
-        }))
+      // The textured model uses Screen.001 for its display backing and Glass.002
+      // for a duplicate glass shell. Keep the backing dark and render screen
+      // content on a dedicated plane so uploads do not depend on exporter names
+      // or on the screen mesh having usable UV coordinates.
+      if (child.name === 'Screen' || child.name === 'Screen.001') {
+        child.material = material(new THREE.MeshBasicMaterial({ color: '#050506' }))
+      } else if (child.name === 'Glass.002') {
+        child.visible = false
       }
     })
 
-    next.userData.ownedGeometries = ownedGeometries
     next.userData.ownedMaterials = ownedMaterials
     return next
-  }, [bodyColor, device.screenBrightness, roughness, scene, texture])
+  }, [scene])
 
   useEffect(() => () => {
-    for (const geometry of model.userData.ownedGeometries as THREE.BufferGeometry[]) geometry.dispose()
     for (const material of model.userData.ownedMaterials as THREE.Material[]) material.dispose()
   }, [model])
 
@@ -121,6 +66,15 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
       }}
     >
       <primitive object={model} scale={0.0202} rotation={[0, Math.PI, 0]} />
+
+      <mesh position={[0, 2.42, 3.005]} rotation={[THREE.MathUtils.degToRad(-10), Math.PI, 0]}>
+        <planeGeometry args={[5.77, 3.78]} />
+        <meshBasicMaterial
+          map={texture}
+          toneMapped={false}
+          color={new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness)}
+        />
+      </mesh>
 
       {device.showReflection && (
         <mesh position={[0, 2.42, 3.02]} rotation={[THREE.MathUtils.degToRad(-10), Math.PI, 0]}>
