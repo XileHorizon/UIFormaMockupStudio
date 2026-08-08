@@ -56,6 +56,38 @@ function fitTextureToScreen(texture: THREE.Texture, screenAspect: number, flipY:
   texture.needsUpdate = true
 }
 
+function makeContainedTexture(image: CanvasImageSource & { width: number; height: number }, screenAspect: number, flipY: boolean, rotation: number, offsetX: number, offsetY: number, scale: number) {
+  const longEdge = 2048
+  const canvas = document.createElement('canvas')
+  if (screenAspect >= 1) {
+    canvas.width = longEdge
+    canvas.height = Math.max(1, Math.round(longEdge / screenAspect))
+  } else {
+    canvas.height = longEdge
+    canvas.width = Math.max(1, Math.round(longEdge * screenAspect))
+  }
+  const context = canvas.getContext('2d')!
+  context.fillStyle = '#000'
+  context.fillRect(0, 0, canvas.width, canvas.height)
+  context.imageSmoothingEnabled = true
+  context.imageSmoothingQuality = 'high'
+  const fit = Math.min(canvas.width / image.width, canvas.height / image.height)
+  const zoom = Math.max(0.5, Math.min(3, scale))
+  const width = image.width * fit * zoom
+  const height = image.height * fit * zoom
+  const x = (canvas.width - width) / 2 + (offsetX / 100) * canvas.width * 0.5
+  const y = (canvas.height - height) / 2 - (offsetY / 100) * canvas.height * 0.5
+  context.drawImage(image, x, y, width, height)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.anisotropy = 8
+  texture.flipY = flipY
+  texture.center.set(0.5, 0.5)
+  texture.rotation = rotation
+  texture.needsUpdate = true
+  return texture
+}
+
 export function useScreenTexture(source: string | null, type: ScreenContentType, options: ScreenTextureOptions = {}) {
   const { aspect = 16 / 9, flipY = true, rotation = 0, offsetX = 0, offsetY = 0, scale = 1 } = options
   const placeholder = useMemo(() => {
@@ -114,6 +146,12 @@ export function useScreenTexture(source: string | null, type: ScreenContentType,
     let active = true
     new THREE.TextureLoader().load(source, next => {
       if (!active) return next.dispose()
+      if (type === 'image') {
+        const contained = makeContainedTexture(next.image as HTMLImageElement, aspect, flipY, rotation, offsetX, offsetY, scale)
+        next.dispose()
+        setTexture(contained)
+        return
+      }
       next.colorSpace = THREE.SRGBColorSpace
       next.anisotropy = 8
       fitTextureToScreen(next, aspect, flipY, rotation, offsetX, offsetY, scale)

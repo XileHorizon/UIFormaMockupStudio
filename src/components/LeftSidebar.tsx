@@ -126,7 +126,7 @@ export default function LeftSidebar() {
 
   const validObjects = objects.filter(o => o?.id && o?.transform && typeof o.transform.rotX === 'number')
 
-  const handleMediaUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !selectedId) return
     const isVideo = file.type.startsWith('video/')
@@ -136,14 +136,34 @@ export default function LeftSidebar() {
       // Use object URL for video to avoid huge base64 strings
       const url = URL.createObjectURL(file)
       updateObject(selectedId, { screenshot: url, screenshotType: 'video' })
-    } else {
+    } else if (isGif) {
       const reader = new FileReader()
       reader.onload = ev => {
         if (ev.target?.result && selectedId) {
-          updateObject(selectedId, { screenshot: ev.target.result as string, screenshotType: isGif ? 'gif' : 'image' })
+          updateObject(selectedId, { screenshot: ev.target.result as string, screenshotType: 'gif' })
         }
       }
       reader.readAsDataURL(file)
+    } else {
+      const sourceUrl = URL.createObjectURL(file)
+      try {
+        const image = new Image()
+        image.src = sourceUrl
+        await image.decode()
+        const maxDimension = 4096
+        const ratio = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio))
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio))
+        const context = canvas.getContext('2d')!
+        context.imageSmoothingEnabled = true
+        context.imageSmoothingQuality = 'high'
+        context.drawImage(image, 0, 0, canvas.width, canvas.height)
+        const optimized = canvas.toDataURL('image/webp', 0.92)
+        updateObject(selectedId, { screenshot: optimized, screenshotType: 'image' })
+      } finally {
+        URL.revokeObjectURL(sourceUrl)
+      }
     }
     e.target.value = ''
   }

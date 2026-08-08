@@ -55,7 +55,7 @@ function ScreenContent({ screenshot, screenshotType, brightness, borderRadius, o
         loop
         muted
         playsInline
-        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${50 + offsetX / 2}% ${50 - offsetY / 2}%`, transform: `scale(${scale})`, display: 'block', filter: `brightness(${brightness})`, borderRadius }}
+        style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: `${50 + offsetX / 2}% ${50 - offsetY / 2}%`, transform: `scale(${scale})`, display: 'block', filter: `brightness(${brightness})`, borderRadius, background: '#000' }}
       />
     )
   }
@@ -63,7 +63,7 @@ function ScreenContent({ screenshot, screenshotType, brightness, borderRadius, o
     <img
       src={screenshot}
       alt="Screen"
-      style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${50 + offsetX / 2}% ${50 - offsetY / 2}%`, transform: `scale(${scale})`, display: 'block', filter: `brightness(${brightness})` }}
+      style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: `${50 + offsetX / 2}% ${50 - offsetY / 2}%`, transform: `scale(${scale})`, display: 'block', filter: `brightness(${brightness})`, background: '#000' }}
     />
   )
 }
