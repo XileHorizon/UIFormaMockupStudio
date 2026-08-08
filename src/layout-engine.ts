@@ -56,7 +56,11 @@ function radialTransforms(input: Transform, settings: RadialLayoutSettings): Tra
       const tangent = u.clone().multiplyScalar(Math.cos(theta)).add(v.clone().multiplyScalar(Math.sin(theta))).normalize()
       const pathRotation = new THREE.Quaternion().setFromAxisAngle(normal, THREE.MathUtils.degToRad(degrees + rotationOffset))
       const radialTilt = new THREE.Quaternion().setFromAxisAngle(tangent, THREE.MathUtils.degToRad(tiltAmount))
-      return toTransform(p, radialTilt.multiply(pathRotation), input)
+      // The source rotation is the final local orientation inherited by every
+      // child. Editing the parent therefore rotates the complete family while
+      // retaining each child's path angle and radial tilt.
+      const inheritedRotation = rotation(input)
+      return toTransform(p, radialTilt.multiply(pathRotation).multiply(inheritedRotation), input)
     }
     return toTransform(p, rotation(input), input)
   })
