@@ -2,6 +2,7 @@ import { Edges, RoundedBox, useGLTF } from '@react-three/drei'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
+import { DEVICE_BODY_COLORS } from '../types'
 import { useScreenTexture } from './StudioMonitor3D'
 
 interface Props {
@@ -13,18 +14,9 @@ interface Props {
   onSelect: () => void
 }
 
-const BODY_COLORS = {
-  'space-black': '#292b2f',
-  silver: '#b8bbc0',
-  white: '#e4e3df',
-  gold: '#cbb18b',
-  blue: '#6f98b8',
-  orange: '#d97948',
-} as const
-
 export default function IPadPro3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/ipad-pro.glb', false, false)
-  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.6477 / 2.2033, rotation: Math.PI })
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.6477 / 2.2033, rotation: Math.PI, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale })
 
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = scene.clone(true)
@@ -45,7 +37,7 @@ export default function IPadPro3D({ device, transform, screenshot, screenshotTyp
           material = new THREE.MeshPhysicalMaterial({ color: '#050609', roughness: 0.22, clearcoat: 0.18, envMapIntensity: 0.42, side: THREE.DoubleSide })
         } else if (sourceMaterial.name === 'Material' || sourceMaterial.name === 'Material.007' || sourceMaterial.name === 'Material.008') {
           material = new THREE.MeshPhysicalMaterial({
-            color: BODY_COLORS[device.color],
+            color: DEVICE_BODY_COLORS[device.color],
             metalness: 0.74,
             roughness: device.materialPreset === 'matte' ? 0.68 : 0.4,
             clearcoat: 0.08,
@@ -82,7 +74,7 @@ export default function IPadPro3D({ device, transform, screenshot, screenshotTyp
 
   return (
     <group
-      position={[transform.posX / 95, -transform.posY / 95 - 0.05, 0.35]}
+      position={[transform.posX / 95, -transform.posY / 95 - 0.05, 0.35 + transform.posZ / 95]}
       rotation={[
         THREE.MathUtils.degToRad(transform.rotX),
         THREE.MathUtils.degToRad(transform.rotY),

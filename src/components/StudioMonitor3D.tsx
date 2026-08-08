@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
+import { DEVICE_BODY_COLORS } from '../types'
 
 interface Props {
   device: DeviceConfig
@@ -12,22 +13,16 @@ interface Props {
   onSelect: () => void
 }
 
-const BODY_COLORS = {
-  'space-black': '#202124',
-  silver: '#c8c9cb',
-  white: '#e8e8e6',
-  gold: '#d3b997',
-  blue: '#6f98b8',
-  orange: '#d97948',
-} as const
-
 interface ScreenTextureOptions {
   aspect?: number
   flipY?: boolean
   rotation?: number
+  offsetX?: number
+  offsetY?: number
+  scale?: number
 }
 
-function fitTextureToScreen(texture: THREE.Texture, screenAspect: number, flipY: boolean, rotation: number) {
+function fitTextureToScreen(texture: THREE.Texture, screenAspect: number, flipY: boolean, rotation: number, offsetX: number, offsetY: number, scale: number) {
   const image = texture.image as { width?: number; height?: number; videoWidth?: number; videoHeight?: number } | undefined
   const width = image?.videoWidth || image?.width || 1
   const height = image?.videoHeight || image?.height || 1
@@ -48,6 +43,12 @@ function fitTextureToScreen(texture: THREE.Texture, screenAspect: number, flipY:
     texture.offset.y = (1 - texture.repeat.y) / 2
   }
 
+  const zoom = Math.max(0.5, Math.min(3, scale))
+  texture.repeat.x /= zoom
+  texture.repeat.y /= zoom
+  texture.offset.x = (1 - texture.repeat.x) / 2 + offsetX * (1 - texture.repeat.x) / 100
+  texture.offset.y = (1 - texture.repeat.y) / 2 + offsetY * (1 - texture.repeat.y) / 100
+
   texture.flipY = flipY
   texture.center.set(0.5, 0.5)
   texture.rotation = rotation
@@ -56,7 +57,7 @@ function fitTextureToScreen(texture: THREE.Texture, screenAspect: number, flipY:
 }
 
 export function useScreenTexture(source: string | null, type: ScreenContentType, options: ScreenTextureOptions = {}) {
-  const { aspect = 16 / 9, flipY = true, rotation = 0 } = options
+  const { aspect = 16 / 9, flipY = true, rotation = 0, offsetX = 0, offsetY = 0, scale = 1 } = options
   const placeholder = useMemo(() => {
     const canvas = document.createElement('canvas')
     canvas.width = 1400
@@ -81,9 +82,9 @@ export function useScreenTexture(source: string | null, type: ScreenContentType,
     }
     const texture = new THREE.CanvasTexture(canvas)
     texture.colorSpace = THREE.SRGBColorSpace
-    fitTextureToScreen(texture, aspect, flipY, rotation)
+    fitTextureToScreen(texture, aspect, flipY, rotation, offsetX, offsetY, scale)
     return texture
-  }, [aspect, flipY, rotation])
+  }, [aspect, flipY, offsetX, offsetY, rotation, scale])
 
   const [texture, setTexture] = useState<THREE.Texture>(placeholder)
 
@@ -102,7 +103,7 @@ export function useScreenTexture(source: string | null, type: ScreenContentType,
       void video.play()
       const next = new THREE.VideoTexture(video)
       next.colorSpace = THREE.SRGBColorSpace
-      video.addEventListener('loadedmetadata', () => fitTextureToScreen(next, aspect, flipY, rotation), { once: true })
+      video.addEventListener('loadedmetadata', () => fitTextureToScreen(next, aspect, flipY, rotation, offsetX, offsetY, scale), { once: true })
       setTexture(next)
       return () => {
         video.pause()
@@ -115,24 +116,24 @@ export function useScreenTexture(source: string | null, type: ScreenContentType,
       if (!active) return next.dispose()
       next.colorSpace = THREE.SRGBColorSpace
       next.anisotropy = 8
-      fitTextureToScreen(next, aspect, flipY, rotation)
+      fitTextureToScreen(next, aspect, flipY, rotation, offsetX, offsetY, scale)
       setTexture(next)
     })
     return () => { active = false }
-  }, [aspect, flipY, placeholder, rotation, source, type])
+  }, [aspect, flipY, offsetX, offsetY, placeholder, rotation, scale, source, type])
 
   return texture
 }
 
 export default function StudioMonitor3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
-  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 5.59 / 3.22 })
-  const body = BODY_COLORS[device.color]
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 5.59 / 3.22, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale })
+  const body = DEVICE_BODY_COLORS[device.color]
   const roughness = device.materialPreset === 'matte' ? 0.72 : 0.42
   const metalness = device.materialPreset === 'glass' ? 0.25 : 0.74
 
   return (
     <group
-      position={[transform.posX / 95, -transform.posY / 95 - 0.15, 0]}
+      position={[transform.posX / 95, -transform.posY / 95 - 0.15, transform.posZ / 95]}
       rotation={[
         THREE.MathUtils.degToRad(transform.rotX),
         THREE.MathUtils.degToRad(transform.rotY),

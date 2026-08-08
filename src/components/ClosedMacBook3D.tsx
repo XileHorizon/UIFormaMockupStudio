@@ -2,6 +2,7 @@ import { Edges, useGLTF } from '@react-three/drei'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
+import { DEVICE_BODY_COLORS } from '../types'
 import { useScreenTexture } from './StudioMonitor3D'
 
 interface Props {
@@ -13,21 +14,12 @@ interface Props {
   onSelect: () => void
 }
 
-const BODY_COLORS = {
-  'space-black': '#242629',
-  silver: '#b9bcc0',
-  white: '#d9dadd',
-  gold: '#bda17d',
-  blue: '#718da5',
-  orange: '#c9794f',
-} as const
-
 const normalizedName = (name: string) => name.toLowerCase().replace(/[._\s-]/g, '')
 
 export default function ClosedMacBook3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/macbook-open.glb', false, false)
-  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 5.72 / 3.72 })
-  const bodyColor = BODY_COLORS[device.color]
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 5.72 / 3.72, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale })
+  const bodyColor = DEVICE_BODY_COLORS[device.color]
   const bodyRoughness = device.materialPreset === 'matte' ? 0.62 : 0.38
 
   const model = useMemo(() => {
@@ -103,7 +95,7 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
 
   return (
     <group
-      position={[transform.posX / 95, -transform.posY / 95 - 1.9, 0.7]}
+      position={[transform.posX / 95, -transform.posY / 95 - 1.9, 0.7 + transform.posZ / 95]}
       rotation={[THREE.MathUtils.degToRad(transform.rotX), THREE.MathUtils.degToRad(transform.rotY), THREE.MathUtils.degToRad(transform.rotZ)]}
       scale={transform.scale}
       onPointerDown={event => { event.stopPropagation(); onSelect() }}

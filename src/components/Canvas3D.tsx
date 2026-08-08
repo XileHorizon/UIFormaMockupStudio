@@ -31,6 +31,48 @@ interface DragState {
   objectId: string | null; active: boolean
 }
 
+function TransformGizmo({ object, tool, onChange }: { object: SceneObject; tool: 'move' | 'rotate' | 'scale'; onChange: (changes: Partial<SceneObject['transform']>) => void }) {
+  const begin = (kind: 'x' | 'y' | 'z' | 'all', event: PointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const startX = event.clientX
+    const startY = event.clientY
+    const start = { ...object.transform }
+    const move = (next: globalThis.PointerEvent) => {
+      const dx = next.clientX - startX
+      const dy = next.clientY - startY
+      if (tool === 'move') {
+        if (kind === 'x') onChange({ posX: start.posX + dx })
+        else if (kind === 'y') onChange({ posY: start.posY + dy })
+        else if (kind === 'z') onChange({ posZ: start.posZ - dy })
+        else onChange({ posX: start.posX + dx, posY: start.posY + dy })
+      } else if (tool === 'rotate') {
+        onChange({ rotZ: start.rotZ + dx * 0.5, rotX: start.rotX + dy * 0.35 })
+      } else {
+        onChange({ scale: Math.max(0.1, start.scale + (dx - dy) * 0.006) })
+      }
+    }
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
+
+  const common = { position: 'absolute' as const, pointerEvents: 'auto' as const, userSelect: 'none' as const, touchAction: 'none' as const }
+  return <div data-export-exclude="true" style={{ ...common, left: `calc(50% + ${object.transform.posX}px)`, top: `calc(50% + ${object.transform.posY}px)`, zIndex: 20 }}>
+    {tool === 'move' ? <>
+      <div onPointerDown={e => begin('all', e)} title="Move freely" style={{ ...common, width: 14, height: 14, left: -7, top: -7, borderRadius: 3, background: '#fff', border: '2px solid #3b7ef8', cursor: 'move' }} />
+      <div onPointerDown={e => begin('x', e)} title="Move X" style={{ ...common, left: 7, top: -2, width: 54, height: 4, background: '#ff4d5e', cursor: 'ew-resize' }}><span style={{ position: 'absolute', right: -13, top: -7, color: '#ff6877', fontSize: 10 }}>X</span></div>
+      <div onPointerDown={e => begin('y', e)} title="Move Y" style={{ ...common, left: -2, top: 7, width: 4, height: 54, background: '#4dd97b', cursor: 'ns-resize' }}><span style={{ position: 'absolute', left: -3, bottom: -15, color: '#67e18f', fontSize: 10 }}>Y</span></div>
+      <div onPointerDown={e => begin('z', e)} title="Move Z (depth)" style={{ ...common, left: -47, top: -47, width: 34, height: 4, background: '#4d8dff', transform: 'rotate(45deg)', transformOrigin: 'right center', cursor: 'ns-resize' }}><span style={{ position: 'absolute', left: -13, top: -7, color: '#69a1ff', fontSize: 10, transform: 'rotate(-45deg)' }}>Z</span></div>
+    </> : tool === 'rotate' ?
+      <div onPointerDown={e => begin('all', e)} title="Drag to rotate" style={{ ...common, width: 86, height: 86, left: -43, top: -43, borderRadius: '50%', border: '2px solid #ffb84d', cursor: 'grab' }} /> :
+      <div onPointerDown={e => begin('all', e)} title="Drag to scale" style={{ ...common, width: 22, height: 22, left: -11, top: -11, border: '2px solid #b36cff', background: 'rgba(179,108,255,.18)', cursor: 'nwse-resize' }} />}
+  </div>
+}
+
 function SceneCamera({ visibleObjectCount, manuallyAdjusted }: { visibleObjectCount: number; manuallyAdjusted: MutableRefObject<boolean> }) {
   const { camera } = useThree()
 
@@ -88,15 +130,6 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
     containerRef.current?.classList.remove('dragging')
   }, [])
 
-  const onWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault()
-    if (!selectedId) return
-    const obj = objects.find(o => o.id === selectedId)
-    if (!obj || obj.locked) return
-    const delta = e.deltaY > 0 ? -0.05 : 0.05
-    updateTransform(selectedId, { scale: Math.max(0.1, Math.min(5, obj.transform.scale + delta)) })
-  }, [selectedId, objects, updateTransform])
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -117,7 +150,6 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
       onPointerDown={onCanvasPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onWheel={onWheel}
     >
       <div
         ref={canvasRef}
@@ -238,9 +270,15 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                 color="#11141a"
               />
             )}
-            <OrbitControls makeDefault enableDamping dampingFactor={0.08} minDistance={7} maxDistance={26} minPolarAngle={Math.PI * 0.28} maxPolarAngle={Math.PI * 0.72} onStart={() => { cameraManuallyAdjusted.current = true }} />
+            <OrbitControls makeDefault enableZoom={false} enableDamping dampingFactor={0.08} minDistance={7} maxDistance={26} minPolarAngle={Math.PI * 0.28} maxPolarAngle={Math.PI * 0.72} onStart={() => { cameraManuallyAdjusted.current = true }} />
           </Canvas>
         </div>
+
+        {selectedId && state.activeTool !== 'select' && (() => {
+          const selected = objects.find(object => object.id === selectedId)
+          if (!selected || selected.locked) return null
+          return <TransformGizmo object={selected} tool={state.activeTool} onChange={changes => updateTransform(selected.id, changes)} />
+        })()}
 
         <div data-canvas-bg="true" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
           {objects.map(obj => {

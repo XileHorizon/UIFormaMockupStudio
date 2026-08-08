@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
+import { DEVICE_BODY_COLORS } from '../types'
 import { useScreenTexture } from './StudioMonitor3D'
 
 interface Props {
@@ -15,23 +16,14 @@ interface Props {
   onSelect: () => void
 }
 
-const BODY_COLORS = {
-  'space-black': '#303236',
-  silver: '#b7b9bd',
-  white: '#e3e1dc',
-  gold: '#c89773',
-  blue: '#547f9c',
-  orange: '#d56f3d',
-} as const
-
 export default function IPhone17Pro3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const source = useLoader(OBJLoader, '/models/iphone-17-pro.obj')
-  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.865717 / 3.913856 })
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.865717 / 3.913856, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale })
 
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = source.clone(true)
     const ownedMaterials: THREE.Material[] = []
-    const bodyColor = BODY_COLORS[device.color]
+    const bodyColor = DEVICE_BODY_COLORS[device.color]
 
     next.traverse(child => {
       if (!(child instanceof THREE.Mesh)) return
@@ -77,7 +69,7 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
 
   return (
     <group
-      position={[transform.posX / 95, -transform.posY / 95 - 0.08, 0.45]}
+      position={[transform.posX / 95, -transform.posY / 95 - 0.08, 0.45 + transform.posZ / 95]}
       rotation={[
         THREE.MathUtils.degToRad(transform.rotX),
         THREE.MathUtils.degToRad(transform.rotY),

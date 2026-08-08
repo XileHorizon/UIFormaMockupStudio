@@ -2,6 +2,7 @@ import { Edges, useGLTF, useTexture } from '@react-three/drei'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
+import { DEVICE_BODY_COLORS } from '../types'
 import { useScreenTexture } from './StudioMonitor3D'
 
 interface Props {
@@ -13,18 +14,9 @@ interface Props {
   onSelect: () => void
 }
 
-const BODY_COLORS = {
-  'space-black': '#24262a',
-  silver: '#b5b8bd',
-  white: '#e5e4e0',
-  gold: '#cbb28d',
-  blue: '#6f98b8',
-  orange: '#d97948',
-} as const
-
 export default function Laptop3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/laptop-3d.glb', false, false)
-  const screenTexture = useScreenTexture(screenshot, screenshotType, { aspect: 5.34 / 3.33 })
+  const screenTexture = useScreenTexture(screenshot, screenshotType, { aspect: 5.34 / 3.33, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale })
   const keyboardTexture = useTexture('/models/laptop-keyboard.png')
   keyboardTexture.colorSpace = THREE.SRGBColorSpace
   keyboardTexture.flipY = false
@@ -73,7 +65,7 @@ export default function Laptop3D({ device, transform, screenshot, screenshotType
           material = new THREE.MeshStandardMaterial({ map: keyboardTexture, roughness: 0.58, side: THREE.DoubleSide })
         } else if (sourceMaterial.name === 'Material.001') {
           material = new THREE.MeshPhysicalMaterial({
-            color: BODY_COLORS[device.color],
+            color: DEVICE_BODY_COLORS[device.color],
             metalness: 0.72,
             roughness: device.materialPreset === 'matte' ? 0.7 : 0.42,
             clearcoat: 0.08,
@@ -112,7 +104,7 @@ export default function Laptop3D({ device, transform, screenshot, screenshotType
 
   return (
     <group
-      position={[transform.posX / 95, -transform.posY / 95 - 0.25, 0.2]}
+      position={[transform.posX / 95, -transform.posY / 95 - 0.25, 0.2 + transform.posZ / 95]}
       rotation={[
         THREE.MathUtils.degToRad(transform.rotX),
         THREE.MathUtils.degToRad(transform.rotY),

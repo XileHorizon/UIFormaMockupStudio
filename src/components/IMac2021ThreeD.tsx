@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
+import { DEVICE_BODY_COLORS } from '../types'
 import { useScreenTexture } from './StudioMonitor3D'
 
 interface Props {
@@ -15,13 +16,9 @@ interface Props {
   onSelect: () => void
 }
 
-const BODY_COLORS = {
-  'space-black': '#292b2f', silver: '#c8cace', white: '#e6e5e1', gold: '#cbb18b', blue: '#6d9bbc', orange: '#df8252',
-} as const
-
 export default function IMac2021ThreeD({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const source = useLoader(OBJLoader, '/models/imac-2021.obj')
-  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 16 / 9 })
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 16 / 9, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale })
 
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = source.clone(true)
@@ -53,7 +50,7 @@ export default function IMac2021ThreeD({ device, transform, screenshot, screensh
             ? new THREE.MeshPhysicalMaterial({ color: '#d7d9dc', metalness: 0.08, roughness: 0.34, clearcoat: 0.12, side: THREE.DoubleSide, envMapIntensity: 0.4 })
             : new THREE.MeshPhysicalMaterial({ color: '#22252a', metalness: 0.25, roughness: 0.24, clearcoat: 0.2, side: THREE.DoubleSide, envMapIntensity: 0.45 })
         } else if (name.includes('metal') || name.includes('aluminum') || name.includes('frontcolor') || name.includes('material13')) {
-          material = new THREE.MeshPhysicalMaterial({ color: BODY_COLORS[device.color], metalness: 0.76, roughness: device.materialPreset === 'matte' ? 0.68 : 0.38, clearcoat: 0.08, side: THREE.DoubleSide, envMapIntensity: 0.5 })
+          material = new THREE.MeshPhysicalMaterial({ color: DEVICE_BODY_COLORS[device.color], metalness: 0.76, roughness: device.materialPreset === 'matte' ? 0.68 : 0.38, clearcoat: 0.08, side: THREE.DoubleSide, envMapIntensity: 0.5 })
         } else {
           material = new THREE.MeshStandardMaterial({ color: '#34363a', metalness: 0.34, roughness: 0.56, side: THREE.DoubleSide, envMapIntensity: 0.4 })
         }
@@ -76,7 +73,7 @@ export default function IMac2021ThreeD({ device, transform, screenshot, screensh
 
   return (
     <group
-      position={[transform.posX / 95, -transform.posY / 95 - 0.12, 0.25]}
+      position={[transform.posX / 95, -transform.posY / 95 - 0.12, 0.25 + transform.posZ / 95]}
       rotation={[THREE.MathUtils.degToRad(transform.rotX), THREE.MathUtils.degToRad(transform.rotY), THREE.MathUtils.degToRad(transform.rotZ)]}
       scale={transform.scale}
       onPointerDown={event => { event.stopPropagation(); onSelect() }}
@@ -85,10 +82,10 @@ export default function IMac2021ThreeD({ device, transform, screenshot, screensh
         <primitive object={model} dispose={null} />
       </group>
       <RoundedBox args={[0.58, 1.45, 0.24]} radius={0.06} smoothness={4} position={[0, -1.78, -0.12]} castShadow>
-        <meshPhysicalMaterial color={BODY_COLORS[device.color]} metalness={0.76} roughness={0.4} clearcoat={0.06} envMapIntensity={0.5} />
+        <meshPhysicalMaterial color={DEVICE_BODY_COLORS[device.color]} metalness={0.76} roughness={0.4} clearcoat={0.06} envMapIntensity={0.5} />
       </RoundedBox>
       <RoundedBox args={[2.55, 0.14, 1.02]} radius={0.09} smoothness={5} position={[0, -2.46, 0.16]} castShadow receiveShadow>
-        <meshPhysicalMaterial color={BODY_COLORS[device.color]} metalness={0.76} roughness={0.42} clearcoat={0.06} envMapIntensity={0.5} />
+        <meshPhysicalMaterial color={DEVICE_BODY_COLORS[device.color]} metalness={0.76} roughness={0.42} clearcoat={0.06} envMapIntensity={0.5} />
       </RoundedBox>
       {selected && (
         <mesh>

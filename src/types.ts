@@ -2,7 +2,7 @@
 
 export type ElementType = 'device' | 'text' | 'shape'
 export type DeviceType = 'phone' | 'iphone-17-pro' | 'laptop' | 'laptop-3d' | 'tablet' | 'ipad-pro' | 'monitor' | 'studio-display' | 'imac-2021' | 'macbook-air' | 'browser'
-export type DeviceColor = 'space-black' | 'silver' | 'white' | 'gold' | 'blue' | 'orange'
+export type DeviceColor = 'midnight' | 'space-black' | 'graphite' | 'silver' | 'starlight' | 'gold' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink'
 export type ShapeType = 'card' | 'ring' | 'blob' | 'pedestal' | 'plane'
 export type ScreenContentType = 'image' | 'video' | 'gif' | null
 
@@ -27,6 +27,7 @@ export interface Transform {
   rotZ: number
   posX: number
   posY: number
+  posZ: number
   scale: number
 }
 
@@ -56,6 +57,9 @@ export interface DeviceConfig {
   showReflection: boolean
   screenBrightness: number
   materialPreset: MaterialPresetId
+  screenOffsetX: number
+  screenOffsetY: number
+  screenScale: number
 }
 
 export interface TextConfig {
@@ -118,7 +122,7 @@ export interface MaterialPreset {
 
 export const MATERIAL_PRESETS: Record<MaterialPresetId, MaterialPreset> = {
   default: {
-    label: 'Default',
+    label: 'Brushed Metal',
     deviceFilter: '',
     bodyOverlay: 'transparent',
     screenOverlay: 'transparent',
@@ -184,7 +188,7 @@ export function genId(): string {
 }
 
 export function defaultTransform(overrides?: Partial<Transform>): Transform {
-  return { rotX: -12, rotY: 24, rotZ: 3, posX: 0, posY: 0, scale: 1, ...overrides }
+  return { rotX: -12, rotY: 24, rotZ: 3, posX: 0, posY: 0, posZ: 0, scale: 1, ...overrides }
 }
 
 export function defaultDevice(type: DeviceType = 'phone'): DeviceConfig {
@@ -196,7 +200,26 @@ export function defaultDevice(type: DeviceType = 'phone'): DeviceConfig {
     showReflection: true,
     screenBrightness: 1,
     materialPreset: 'default',
+    screenOffsetX: 0,
+    screenOffsetY: 0,
+    screenScale: 1,
   }
+}
+
+export const DEVICE_BODY_COLORS: Record<DeviceColor, string> = {
+  midnight: '#17191d',
+  'space-black': '#292a2d',
+  graphite: '#55565a',
+  silver: '#c6c8ca',
+  starlight: '#d7cfc1',
+  gold: '#c7a979',
+  red: '#b7353f',
+  orange: '#d66f35',
+  yellow: '#d9b83e',
+  green: '#4f8b67',
+  blue: '#527fa8',
+  purple: '#745b9a',
+  pink: '#c77b91',
 }
 
 export function defaultTextConfig(): TextConfig {
@@ -342,7 +365,7 @@ export const TEMPLATES: Template[] = [
     background: { type: 'solid', color: '#f5f5f7' },
     objects: [
       { name: 'Phone Left', elementType: 'device', device: { ...defaultDevice('phone'), color: 'silver' }, transform: defaultTransform({ rotX: -4, rotY: -18, rotZ: -2, posX: -120, posY: 0, scale: 0.92 }), screenshot: null, screenshotType: null, visible: true, locked: false },
-      { name: 'Phone Right', elementType: 'device', device: { ...defaultDevice('phone'), color: 'white' }, transform: defaultTransform({ rotX: -4, rotY: 18, rotZ: 2, posX: 120, posY: 0, scale: 0.92 }), screenshot: null, screenshotType: null, visible: true, locked: false },
+      { name: 'Phone Right', elementType: 'device', device: { ...defaultDevice('phone'), color: 'starlight' }, transform: defaultTransform({ rotX: -4, rotY: 18, rotZ: 2, posX: 120, posY: 0, scale: 0.92 }), screenshot: null, screenshotType: null, visible: true, locked: false },
     ],
   },
   {

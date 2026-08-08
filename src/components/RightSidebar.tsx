@@ -82,12 +82,19 @@ function ChipRow<T extends string>({ options, value, onChange }: { options: { id
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const DEVICE_COLOR_OPTIONS: { id: DeviceColor; label: string; swatch: string }[] = [
+  { id: 'midnight', label: 'Midnight', swatch: '#17191d' },
   { id: 'space-black', label: 'Space Black', swatch: '#1c1c1e' },
+  { id: 'graphite', label: 'Graphite', swatch: '#55565a' },
   { id: 'silver', label: 'Silver', swatch: '#e8e8e8' },
-  { id: 'white', label: 'White', swatch: '#f5f5f7' },
-  { id: 'gold', label: 'Gold', swatch: '#f5e6c8' },
-  { id: 'blue', label: 'Blue', swatch: '#6f98b8' },
-  { id: 'orange', label: 'Orange', swatch: '#e58b5b' },
+  { id: 'starlight', label: 'Starlight', swatch: '#d7cfc1' },
+  { id: 'gold', label: 'Gold', swatch: '#c7a979' },
+  { id: 'red', label: 'Red', swatch: '#b7353f' },
+  { id: 'orange', label: 'Orange', swatch: '#d66f35' },
+  { id: 'yellow', label: 'Yellow', swatch: '#d9b83e' },
+  { id: 'green', label: 'Green', swatch: '#4f8b67' },
+  { id: 'blue', label: 'Blue', swatch: '#527fa8' },
+  { id: 'purple', label: 'Purple', swatch: '#745b9a' },
+  { id: 'pink', label: 'Pink', swatch: '#c77b91' },
 ]
 
 const BG_OPTIONS: { type: BackgroundType; label: string }[] = [
@@ -132,8 +139,9 @@ export default function RightSidebar() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
                   <div><div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: 3 }}>Pos X</div><NumberInput value={t.posX} onChange={v => updateTransform(selId!, { posX: v })} /></div>
                   <div><div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: 3 }}>Pos Y</div><NumberInput value={t.posY} onChange={v => updateTransform(selId!, { posY: v })} /></div>
-                  <div><div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: 3 }}>Scale</div><NumberInput value={t.scale} step={0.1} onChange={v => updateTransform(selId!, { scale: Math.max(0.1, v) })} /></div>
+                  <div><div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: 3 }}>Pos Z</div><NumberInput value={t.posZ ?? 0} onChange={v => updateTransform(selId!, { posZ: v })} /></div>
                 </div>
+                <div style={{ marginTop: 6 }}><div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: 3 }}>Scale</div><NumberInput value={t.scale} step={0.1} onChange={v => updateTransform(selId!, { scale: Math.max(0.1, v) })} /></div>
               </div>
             </div>
           )}
@@ -147,7 +155,7 @@ export default function RightSidebar() {
               {open.element && (
                 <div style={{ paddingBottom: 10 }}>
                   <Row label="Color">
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                       {DEVICE_COLOR_OPTIONS.map(c => <ColorSwatch key={c.id} color={c.swatch} title={c.label} selected={d.color === c.id} onClick={() => updateDevice(selId!, { color: c.id })} />)}
                     </div>
                   </Row>
@@ -159,6 +167,12 @@ export default function RightSidebar() {
                   <Row label="Shadow"><Toggle value={d.showShadow} onChange={v => updateDevice(selId!, { showShadow: v })} /></Row>
                   <Row label="Reflection"><Toggle value={d.showReflection} onChange={v => updateDevice(selId!, { showReflection: v })} /></Row>
                   <Row label="Brightness"><Slider value={d.screenBrightness} min={0.3} max={1.5} fmt={v => `${(v * 100).toFixed(0)}%`} onChange={v => updateDevice(selId!, { screenBrightness: v })} /></Row>
+                  {sel.screenshot && <>
+                    <Row label="Image X"><Slider value={d.screenOffsetX ?? 0} min={-100} max={100} step={1} fmt={v => `${v.toFixed(0)}%`} onChange={v => updateDevice(selId!, { screenOffsetX: v })} /></Row>
+                    <Row label="Image Y"><Slider value={d.screenOffsetY ?? 0} min={-100} max={100} step={1} fmt={v => `${v.toFixed(0)}%`} onChange={v => updateDevice(selId!, { screenOffsetY: v })} /></Row>
+                    <Row label="Image zoom"><Slider value={d.screenScale ?? 1} min={0.5} max={3} step={0.01} fmt={v => `${v.toFixed(2)}×`} onChange={v => updateDevice(selId!, { screenScale: v })} /></Row>
+                    <Row label="Image fit"><button onClick={() => updateDevice(selId!, { screenOffsetX: 0, screenOffsetY: 0, screenScale: 1 })} style={{ padding: '5px 8px', borderRadius: 5, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 10 }}>Reset</button></Row>
+                  </>}
                 </div>
               )}
 

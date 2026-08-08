@@ -15,9 +15,15 @@ export function sanitizeObjects(objects: SceneObject[]): SceneObject[] {
     return false
   }).map(o => ({
     ...o,
+    transform: { ...o.transform, posZ: o.transform.posZ ?? 0 },
     elementType: o.elementType ?? 'device',
     screenshotType: o.screenshotType ?? null,
-    device: o.device ?? { type: 'phone', color: 'space-black', orientation: 'portrait', showShadow: true, showReflection: true, screenBrightness: 1, materialPreset: 'default' },
+    device: {
+      ...(o.device ?? { type: 'phone', color: 'space-black', orientation: 'portrait', showShadow: true, showReflection: true, screenBrightness: 1, materialPreset: 'default' }),
+      screenOffsetX: o.device?.screenOffsetX ?? 0,
+      screenOffsetY: o.device?.screenOffsetY ?? 0,
+      screenScale: o.device?.screenScale ?? 1,
+    },
   }))
 }
 

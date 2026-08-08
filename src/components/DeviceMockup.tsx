@@ -11,17 +11,29 @@ interface Props {
 }
 
 const DEVICE_COLORS: Record<string, { body: string; frame: string; button: string }> = {
+  midnight:      { body: '#17191d', frame: '#25282d', button: '#111318' },
   'space-black': { body: '#1c1c1e', frame: '#2a2a2d', button: '#232325' },
+  graphite:      { body: '#55565a', frame: '#67686c', button: '#45464a' },
   silver:        { body: '#e8e8e8', frame: '#d0d0d2', button: '#c8c8ca' },
-  white:         { body: '#f5f5f7', frame: '#e0e0e2', button: '#d8d8da' },
+  starlight:     { body: '#d7cfc1', frame: '#e2ddd3', button: '#c0b7a9' },
   gold:          { body: '#f5e6c8', frame: '#d4b896', button: '#c8ae88' },
+  red:           { body: '#b7353f', frame: '#cc4b55', button: '#8e2730' },
+  orange:        { body: '#d66f35', frame: '#e48149', button: '#ae5425' },
+  yellow:        { body: '#d9b83e', frame: '#e4c957', button: '#ae902b' },
+  green:         { body: '#4f8b67', frame: '#65a07b', button: '#3a6b4c' },
+  blue:          { body: '#527fa8', frame: '#6995ba', button: '#3d6487' },
+  purple:        { body: '#745b9a', frame: '#8c72b2', button: '#594478' },
+  pink:          { body: '#c77b91', frame: '#d591a4', button: '#a85e75' },
 }
 
-function ScreenContent({ screenshot, screenshotType, brightness, borderRadius }: {
+function ScreenContent({ screenshot, screenshotType, brightness, borderRadius, offsetX, offsetY, scale }: {
   screenshot: string | null
   screenshotType: ScreenContentType
   brightness: number
   borderRadius: number
+  offsetX: number
+  offsetY: number
+  scale: number
 }) {
   if (!screenshot) {
     return (
@@ -43,7 +55,7 @@ function ScreenContent({ screenshot, screenshotType, brightness, borderRadius }:
         loop
         muted
         playsInline
-        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: `brightness(${brightness})`, borderRadius }}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${50 + offsetX / 2}% ${50 - offsetY / 2}%`, transform: `scale(${scale})`, display: 'block', filter: `brightness(${brightness})`, borderRadius }}
       />
     )
   }
@@ -51,22 +63,25 @@ function ScreenContent({ screenshot, screenshotType, brightness, borderRadius }:
     <img
       src={screenshot}
       alt="Screen"
-      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: `brightness(${brightness})` }}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${50 + offsetX / 2}% ${50 - offsetY / 2}%`, transform: `scale(${scale})`, display: 'block', filter: `brightness(${brightness})` }}
     />
   )
 }
 
-function Screen({ screenshot, screenshotType, brightness, reflection, borderRadius, materialOverlay }: {
+function Screen({ screenshot, screenshotType, brightness, reflection, borderRadius, materialOverlay, offsetX = 0, offsetY = 0, scale = 1 }: {
   screenshot: string | null
   screenshotType: ScreenContentType
   brightness: number
   reflection: boolean
   borderRadius: number
   materialOverlay: string
+  offsetX?: number
+  offsetY?: number
+  scale?: number
 }) {
   return (
     <>
-      <ScreenContent screenshot={screenshot} screenshotType={screenshotType} brightness={brightness} borderRadius={borderRadius} />
+      <ScreenContent screenshot={screenshot} screenshotType={screenshotType} brightness={brightness} borderRadius={borderRadius} offsetX={offsetX} offsetY={offsetY} scale={scale} />
       {reflection && (
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(145deg, rgba(255,255,255,0.06) 0%, transparent 40%)', borderRadius, pointerEvents: 'none' }} />
       )}
@@ -96,7 +111,7 @@ function PhoneMockup({ device, screenshot, screenshotType, lighting }: Omit<Prop
         {mat.bodyOverlay !== 'transparent' && <div style={{ position: 'absolute', inset: 0, background: mat.bodyOverlay, pointerEvents: 'none' }} />}
       </div>
       <div style={{ position: 'absolute', top: 14, left: 12, right: 12, bottom: 14, borderRadius: 36, background: '#000', overflow: 'hidden', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.5)' }}>
-        <Screen screenshot={screenshot} screenshotType={screenshotType} brightness={device.screenBrightness} reflection={device.showReflection} borderRadius={36} materialOverlay={mat.screenOverlay} />
+        <Screen screenshot={screenshot} screenshotType={screenshotType} brightness={device.screenBrightness} reflection={device.showReflection} borderRadius={36} materialOverlay={mat.screenOverlay} offsetX={device.screenOffsetX} offsetY={device.screenOffsetY} scale={device.screenScale} />
       </div>
       <div style={{ position: 'absolute', top: 26, left: '50%', transform: 'translateX(-50%)', width: 80, height: 28, background: '#000', borderRadius: 20, zIndex: 10 }} />
       <div style={{ position: 'absolute', left: -3, top: 128, width: 3, height: 36, background: c.button, borderRadius: '2px 0 0 2px', border: `1px solid ${border}`, borderRight: 'none' }} />
@@ -123,7 +138,7 @@ function LaptopMockup({ device, screenshot, screenshotType, lighting }: Omit<Pro
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(145deg, ${hi} 0%, transparent 35%)`, pointerEvents: 'none' }} />
         {mat.bodyOverlay !== 'transparent' && <div style={{ position: 'absolute', inset: 0, background: mat.bodyOverlay, pointerEvents: 'none' }} />}
         <div style={{ position: 'absolute', top: 12, left: 20, right: 20, bottom: 12, background: '#000', borderRadius: '8px 8px 4px 4px', overflow: 'hidden' }}>
-          <Screen screenshot={screenshot} screenshotType={screenshotType} brightness={device.screenBrightness} reflection={device.showReflection} borderRadius={8} materialOverlay={mat.screenOverlay} />
+          <Screen screenshot={screenshot} screenshotType={screenshotType} brightness={device.screenBrightness} reflection={device.showReflection} borderRadius={8} materialOverlay={mat.screenOverlay} offsetX={device.screenOffsetX} offsetY={device.screenOffsetY} scale={device.screenScale} />
         </div>
         <div style={{ position: 'absolute', top: 5, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, background: '#333', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)' }} />
       </div>
@@ -166,7 +181,7 @@ function TabletMockup({ device, screenshot, screenshotType, lighting }: Omit<Pro
         {mat.bodyOverlay !== 'transparent' && <div style={{ position: 'absolute', inset: 0, background: mat.bodyOverlay, pointerEvents: 'none' }} />}
       </div>
       <div style={{ position: 'absolute', top: 16, left: 22, right: 22, bottom: 16, borderRadius: 14, background: '#000', overflow: 'hidden' }}>
-        <Screen screenshot={screenshot} screenshotType={screenshotType} brightness={device.screenBrightness} reflection={device.showReflection} borderRadius={14} materialOverlay={mat.screenOverlay} />
+        <Screen screenshot={screenshot} screenshotType={screenshotType} brightness={device.screenBrightness} reflection={device.showReflection} borderRadius={14} materialOverlay={mat.screenOverlay} offsetX={device.screenOffsetX} offsetY={device.screenOffsetY} scale={device.screenScale} />
       </div>
       <div style={{ position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)', width: 16, height: 16, borderRadius: '50%', border: `1px solid ${border}`, zIndex: 10 }} />
     </div>
@@ -178,7 +193,7 @@ function TabletMockup({ device, screenshot, screenshotType, lighting }: Omit<Pro
 function BrowserMockup({ device, screenshot, screenshotType, lighting }: Omit<Props, 'transform'>) {
   const cfg = LIGHTING_CONFIGS[lighting.preset]
   const mat = MATERIAL_PRESETS[device.materialPreset ?? 'default']
-  const isLight = device.color === 'white' || device.color === 'silver'
+  const isLight = device.color === 'starlight' || device.color === 'silver'
   const chromeBg = isLight ? '#f0f0f0' : '#1e1e22'
   const urlBarBg = isLight ? '#fff' : '#2a2a2e'
   const border = isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.08)'
@@ -204,7 +219,7 @@ function BrowserMockup({ device, screenshot, screenshotType, lighting }: Omit<Pr
         </div>
       </div>
       <div style={{ width: '100%', height: 340, background: '#fff', border: `1px solid ${border}`, borderTop: 'none', borderRadius: '0 0 8px 8px', overflow: 'hidden', position: 'relative' }}>
-        <Screen screenshot={screenshot} screenshotType={screenshotType} brightness={device.screenBrightness} reflection={device.showReflection} borderRadius={0} materialOverlay={mat.screenOverlay} />
+        <Screen screenshot={screenshot} screenshotType={screenshotType} brightness={device.screenBrightness} reflection={device.showReflection} borderRadius={0} materialOverlay={mat.screenOverlay} offsetX={device.screenOffsetX} offsetY={device.screenOffsetY} scale={device.screenScale} />
       </div>
     </div>
   )
@@ -226,7 +241,7 @@ function MonitorMockup({ device, screenshot, screenshotType, lighting }: Omit<Pr
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(145deg, ${hi} 0%, transparent 30%)`, pointerEvents: 'none' }} />
         {mat.bodyOverlay !== 'transparent' && <div style={{ position: 'absolute', inset: 0, background: mat.bodyOverlay, pointerEvents: 'none' }} />}
         <div style={{ width: '100%', height: 280, background: '#000', borderRadius: 6, overflow: 'hidden' }}>
-          <Screen screenshot={screenshot} screenshotType={screenshotType} brightness={device.screenBrightness} reflection={device.showReflection} borderRadius={6} materialOverlay={mat.screenOverlay} />
+          <Screen screenshot={screenshot} screenshotType={screenshotType} brightness={device.screenBrightness} reflection={device.showReflection} borderRadius={6} materialOverlay={mat.screenOverlay} offsetX={device.screenOffsetX} offsetY={device.screenOffsetY} scale={device.screenScale} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8 }}>
           <div style={{ width: 16, height: 16, borderRadius: 3, background: isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.08)' }} />
