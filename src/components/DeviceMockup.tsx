@@ -256,33 +256,35 @@ function MonitorMockup({ device, screenshot, screenshotType, lighting }: Omit<Pr
 // ── Root export ────────────────────────────────────────────────────────────────
 
 export default function DeviceMockup({ device, transform, screenshot, screenshotType, lighting }: Props) {
-  const lightCfg = LIGHTING_CONFIGS[lighting.preset]
-  const mat = MATERIAL_PRESETS[device.materialPreset ?? 'default']
-
   const neonShadow = device.materialPreset === 'neon'
     ? `drop-shadow(0 0 20px rgba(100,120,255,0.7)) drop-shadow(0 0 40px rgba(100,120,255,0.4))`
     : ''
 
-  const deviceStyle = useMemo(() => {
+  const transformStyle = useMemo(() => ({
+    transform: `rotateX(${transform.rotX}deg) rotateY(${transform.rotY}deg) rotateZ(${transform.rotZ}deg)`,
+    transformStyle: 'preserve-3d' as const,
+  }), [transform.rotX, transform.rotY, transform.rotZ])
+
+  const lightingStyle = useMemo(() => {
     const shadowBlur = lighting.shadowSoftness ?? 60
     const shadowOpacity = lighting.shadowOpacity ?? 0.45
     const dropShadow = device.showShadow
       ? `drop-shadow(0 ${shadowBlur * 0.4}px ${shadowBlur}px rgba(0,0,0,${shadowOpacity}))`
       : ''
     return {
-      transform: `rotateX(${transform.rotX}deg) rotateY(${transform.rotY}deg) rotateZ(${transform.rotZ}deg)`,
-      transformStyle: 'preserve-3d' as const,
       filter: [dropShadow, neonShadow].filter(Boolean).join(' ') || 'none',
     }
-  }, [transform, device.showShadow, lighting.shadowSoftness, lighting.shadowOpacity, neonShadow])
+  }, [device.showShadow, lighting.shadowSoftness, lighting.shadowOpacity, neonShadow])
 
   return (
-    <div style={deviceStyle}>
-      {device.type === 'phone'   && <PhoneMockup   device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
-      {device.type === 'laptop'  && <LaptopMockup  device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
-      {device.type === 'tablet'  && <TabletMockup  device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
-      {device.type === 'browser' && <BrowserMockup device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
-      {device.type === 'monitor' && <MonitorMockup device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
+    <div style={transformStyle}>
+      <div style={lightingStyle}>
+        {device.type === 'phone'   && <PhoneMockup   device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
+        {device.type === 'laptop'  && <LaptopMockup  device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
+        {device.type === 'tablet'  && <TabletMockup  device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
+        {device.type === 'browser' && <BrowserMockup device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
+        {device.type === 'monitor' && <MonitorMockup device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
+      </div>
     </div>
   )
 }
