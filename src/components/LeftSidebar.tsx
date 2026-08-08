@@ -1,6 +1,6 @@
 import { useState, useRef, type ChangeEvent, type KeyboardEvent } from 'react'
 import { useEditor } from '../store'
-import type { DeviceType, AnglePreset, SceneObject, ShapeType, LayoutPattern, DeviceColor } from '../types'
+import type { DeviceType, AnglePreset, SceneObject, ShapeType, LayoutPattern, DeviceColor, PatternPlane, PatternAxis, RotationFollowAxis, CopyMode } from '../types'
 import { ANGLE_PRESETS } from '../types'
 
 const DEVICE_TYPES: { type: DeviceType; label: string }[] = [
@@ -132,15 +132,18 @@ function ObjectRow({ obj, selected, index, total, onSelect, onRename, onToggleVi
 }
 
 export default function LeftSidebar() {
-  const { state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, updateObject, updateDevice, updateTransform, reorderObjects, applyLayout, applyLinkedLayout } = useEditor()
+  const { state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, updateObject, updateDevice, updateTransform, reorderObjects, applyLayout, generatePattern } = useEditor()
   const mediaRef = useRef<HTMLInputElement>(null)
   const [layout, setLayout] = useState<LayoutPattern>('fan')
   const [layoutSpacing, setLayoutSpacing] = useState(210)
   const [layoutDepth, setLayoutDepth] = useState(28)
   const [layoutCurve, setLayoutCurve] = useState(24)
   const [rainbowColors, setRainbowColors] = useState(true)
-  const [linkedCopies, setLinkedCopies] = useState(false)
+  const [copyMode, setCopyMode] = useState<CopyMode | 'arrange'>('arrange')
   const [copyCount, setCopyCount] = useState(8)
+  const [patternPlane, setPatternPlane] = useState<PatternPlane>('xy')
+  const [mirrorAxis, setMirrorAxis] = useState<PatternAxis>('x')
+  const [rotationAxis, setRotationAxis] = useState<RotationFollowAxis>('y')
   const { objects, selectedId } = state
 
   const validObjects = objects.filter(o => o?.id && o?.transform && typeof o.transform.rotX === 'number')
@@ -197,9 +200,9 @@ export default function LeftSidebar() {
   const layoutTargets = validObjects.filter(o => o.visible && !o.locked && (o.elementType === 'device' || o.elementType == null))
 
   const applyCurrentLayout = () => {
-    if (linkedCopies) applyLinkedLayout(layout, layoutSpacing, layoutDepth, layoutCurve, copyCount)
-    else applyLayout(layout, layoutSpacing, layoutDepth, layoutCurve)
-    if (rainbowColors && !linkedCopies) layoutTargets.forEach((o, index) => updateDevice(o.id, { color: RAINBOW_COLORS[index % RAINBOW_COLORS.length] }))
+    if (copyMode === 'arrange') applyLayout(layout, layoutSpacing, layoutDepth, layoutCurve, patternPlane, mirrorAxis, rotationAxis)
+    else generatePattern(layout, layoutSpacing, layoutDepth, layoutCurve, copyCount, copyMode, patternPlane, mirrorAxis, rotationAxis)
+    if (rainbowColors && copyMode === 'arrange') layoutTargets.forEach((o, index) => updateDevice(o.id, { color: RAINBOW_COLORS[index % RAINBOW_COLORS.length] }))
   }
 
   return (
@@ -258,16 +261,21 @@ export default function LeftSidebar() {
         <label style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 9, fontSize: 10, color: 'var(--text-muted)', cursor: 'pointer' }}>
           <input type="checkbox" checked={rainbowColors} onChange={e => setRainbowColors(e.target.checked)} /> Rainbow device colors
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 7, fontSize: 10, color: 'var(--text-muted)', cursor: 'pointer' }}>
-          <input type="checkbox" checked={linkedCopies} onChange={e => setLinkedCopies(e.target.checked)} /> Linked copies from selected
-        </label>
-        {linkedCopies && <label style={{ display: 'grid', gridTemplateColumns: '48px 1fr 30px', alignItems: 'center', gap: 5, marginTop: 7, fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginTop: 9 }}>
+          {([['arrange', 'Arrange'], ['clone', 'Clone'], ['linked', 'Live Link']] as const).map(([mode, label]) => <button key={mode} onClick={() => setCopyMode(mode)} style={{ padding: '6px 2px', borderRadius: 5, border: `1px solid ${copyMode === mode ? 'var(--accent)' : 'var(--border)'}`, background: copyMode === mode ? 'var(--accent-glow)' : 'var(--surface)', color: copyMode === mode ? 'var(--accent)' : 'var(--text-muted)', fontSize: 9, cursor: 'pointer' }}>{label}</button>)}
+        </div>
+        {copyMode !== 'arrange' && <label style={{ display: 'grid', gridTemplateColumns: '48px 1fr 30px', alignItems: 'center', gap: 5, marginTop: 7, fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
           <span>Copies</span><input type="range" min={2} max={24} value={copyCount} onChange={e => setCopyCount(Number(e.target.value))} style={{ width: '100%' }} /><span style={{ textAlign: 'right', color: 'var(--text-muted)' }}>{copyCount}</span>
         </label>}
-        <button onClick={applyCurrentLayout} disabled={linkedCopies ? !selIsDevice : layoutTargets.length < 2} style={{ width: '100%', marginTop: 9, padding: '7px 8px', borderRadius: 6, border: 'none', background: (linkedCopies ? selIsDevice : layoutTargets.length >= 2) ? 'var(--accent)' : 'var(--surface-2)', color: (linkedCopies ? selIsDevice : layoutTargets.length >= 2) ? '#fff' : 'var(--text-dim)', cursor: (linkedCopies ? selIsDevice : layoutTargets.length >= 2) ? 'pointer' : 'default', fontSize: 10, fontWeight: 600 }}>
-          {linkedCopies ? `Create ${copyCount} linked devices` : `Arrange ${layoutTargets.length} devices`}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginTop: 8 }}>
+          <label style={{ fontSize: 9, color: 'var(--text-dim)' }}>Pattern plane<select value={patternPlane} onChange={e => setPatternPlane(e.target.value as PatternPlane)} style={{ width: '100%', marginTop: 3, padding: 4, background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 4 }}><option value="xy">XY</option><option value="xz">XZ</option><option value="yz">YZ</option></select></label>
+          <label style={{ fontSize: 9, color: 'var(--text-dim)' }}>Rotation follows<select value={rotationAxis} onChange={e => setRotationAxis(e.target.value as RotationFollowAxis)} style={{ width: '100%', marginTop: 3, padding: 4, background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 4 }}><option value="none">None</option><option value="x">X axis</option><option value="y">Y axis</option><option value="z">Z axis</option></select></label>
+        </div>
+        {layout === 'mirror' && <label style={{ display: 'block', marginTop: 7, fontSize: 9, color: 'var(--text-dim)' }}>Mirror across<select value={mirrorAxis} onChange={e => setMirrorAxis(e.target.value as PatternAxis)} style={{ width: '100%', marginTop: 3, padding: 4, background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 4 }}><option value="x">X axis</option><option value="y">Y axis</option><option value="z">Z axis</option></select></label>}
+        <button onClick={applyCurrentLayout} disabled={copyMode !== 'arrange' ? !selIsDevice : layoutTargets.length < 2} style={{ width: '100%', marginTop: 9, padding: '7px 8px', borderRadius: 6, border: 'none', background: (copyMode !== 'arrange' ? selIsDevice : layoutTargets.length >= 2) ? 'var(--accent)' : 'var(--surface-2)', color: (copyMode !== 'arrange' ? selIsDevice : layoutTargets.length >= 2) ? '#fff' : 'var(--text-dim)', cursor: (copyMode !== 'arrange' ? selIsDevice : layoutTargets.length >= 2) ? 'pointer' : 'default', fontSize: 10, fontWeight: 600 }}>
+          {copyMode === 'arrange' ? `Arrange ${layoutTargets.length} devices` : copyMode === 'clone' ? `Clone ${copyCount} independent devices` : `Create ${copyCount} live-linked devices`}
         </button>
-        <div style={{ marginTop: 6, fontSize: 9, lineHeight: 1.35, color: 'var(--text-dim)' }}>{linkedCopies ? 'Changing any linked device updates the model, material, and screen across the group.' : 'Uses visible, unlocked devices. Screens and materials stay intact.'}</div>
+        <div style={{ marginTop: 6, fontSize: 9, lineHeight: 1.35, color: 'var(--text-dim)' }}>{copyMode === 'linked' ? 'Device, material, color, and screen edits stay synchronized. Position and pattern rotation remain independent.' : copyMode === 'clone' ? 'Creates fully independent copies from the selected device.' : 'Rearranges visible, unlocked devices without creating copies.'}</div>
       </div>
 
       <Sep />

@@ -1,5 +1,5 @@
 import { useContext, useReducer, useCallback, type ReactNode } from 'react'
-import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig, LayoutPattern } from './types'
+import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig, LayoutPattern, PatternPlane, PatternAxis, RotationFollowAxis, CopyMode } from './types'
 import { createSceneObject, createTextObject, createShapeObject, genId, defaultTransform, TEMPLATES } from './types'
 import { EditorContext, type EditorContextValue } from './context.tsx'
 
@@ -87,8 +87,8 @@ type Action =
   | { type: 'IMPORT_PROJECT'; payload: AppState }
   | { type: 'ALIGN_OBJECTS'; payload: { axis: 'horizontal' | 'vertical' } }
   | { type: 'DISTRIBUTE_OBJECTS'; payload: { axis: 'horizontal' | 'vertical' } }
-  | { type: 'APPLY_LAYOUT'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number } }
-  | { type: 'APPLY_LINKED_LAYOUT'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number; count: number } }
+  | { type: 'APPLY_LAYOUT'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number; plane?: PatternPlane; mirrorAxis?: PatternAxis; rotationAxis?: RotationFollowAxis; targetIds?: string[] } }
+  | { type: 'GENERATE_PATTERN'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number; count: number; mode: CopyMode; plane: PatternPlane; mirrorAxis: PatternAxis; rotationAxis: RotationFollowAxis } }
 
 function updateObj(objects: SceneObject[], id: string, up: (o: SceneObject) => SceneObject): SceneObject[] {
   return objects.map(o => (o.id === id ? up(o) : o))
@@ -234,49 +234,70 @@ function reducer(state: AppState, action: Action): AppState {
       }
     }
     case 'APPLY_LAYOUT': {
-      const targets = state.objects.filter(o => o.visible && !o.locked && (o.elementType === 'device' || o.elementType == null))
+      const targetIdSet = action.payload.targetIds ? new Set(action.payload.targetIds) : null
+      const targets = state.objects.filter(o => (!targetIdSet || targetIdSet.has(o.id)) && o.visible && !o.locked && (o.elementType === 'device' || o.elementType == null))
       if (targets.length < 2) return state
       const ids = new Set(targets.map(o => o.id))
       const middle = (targets.length - 1) / 2
       const { pattern, spacing, depth, curve } = action.payload
+      const plane = action.payload.plane ?? 'xy'
+      const mirrorAxis = action.payload.mirrorAxis ?? 'x'
+      const rotationAxis = action.payload.rotationAxis ?? 'none'
       const columns = Math.ceil(Math.sqrt(targets.length))
       const rows = Math.ceil(targets.length / columns)
       const transforms = new Map<string, Partial<Transform>>()
 
       targets.forEach((object, index) => {
         const offset = index - middle
-        let next: Partial<Transform> = { posX: offset * spacing, posY: 0, posZ: offset * depth, rotZ: 0 }
+        let next: Partial<Transform> = { posX: offset * spacing, posY: 0, posZ: offset * depth }
+        let followAngle = 0
         if (pattern === 'fan') {
-          next = { posX: offset * spacing * 0.72, posY: Math.abs(offset) * curve * 0.42, posZ: -Math.abs(offset) * depth, rotY: offset * curve * 0.16, rotZ: offset * curve * 0.08 }
+          followAngle = offset * curve * 0.16
+          next = { posX: offset * spacing * 0.72, posY: Math.abs(offset) * curve * 0.42, posZ: -Math.abs(offset) * depth }
         } else if (pattern === 'arc') {
-          next = { posX: offset * spacing, posY: offset * offset * curve * 0.12, posZ: -Math.abs(offset) * depth, rotY: offset * curve * 0.12, rotZ: offset * curve * 0.06 }
+          followAngle = offset * curve * 0.12
+          next = { posX: offset * spacing, posY: offset * offset * curve * 0.12, posZ: -Math.abs(offset) * depth }
         } else if (pattern === 'staircase') {
-          next = { posX: offset * spacing, posY: -offset * curve, posZ: offset * depth, rotY: offset * curve * 0.08, rotZ: 0 }
+          followAngle = offset * curve * 0.08
+          next = { posX: offset * spacing, posY: -offset * curve, posZ: offset * depth }
         } else if (pattern === 'grid') {
           const row = Math.floor(index / columns), col = index % columns
-          next = { posX: (col - (columns - 1) / 2) * spacing, posY: (row - (rows - 1) / 2) * spacing * 0.8, posZ: row * depth, rotY: 0, rotZ: 0 }
+          next = { posX: (col - (columns - 1) / 2) * spacing, posY: (row - (rows - 1) / 2) * spacing * 0.8, posZ: row * depth }
         } else if (pattern === 'rainbow') {
           const angle = targets.length === 1 ? 0 : (index / (targets.length - 1) - 0.5) * Math.PI * 0.9
-          next = { posX: Math.sin(angle) * spacing * Math.max(1.5, targets.length * 0.42), posY: (1 - Math.cos(angle)) * curve * 1.5, posZ: -Math.abs(offset) * depth, rotY: angle * 32, rotZ: angle * 18 }
+          followAngle = angle * 180 / Math.PI
+          next = { posX: Math.sin(angle) * spacing * Math.max(1.5, targets.length * 0.42), posY: (1 - Math.cos(angle)) * curve * 1.5, posZ: -Math.abs(offset) * depth }
         } else if (pattern === 'mirror') {
           const side = index % 2 === 0 ? -1 : 1
           const tier = Math.floor(index / 2) + 0.5
-          next = { posX: side * tier * spacing, posY: Math.floor(index / 2) * curve, posZ: -Math.floor(index / 2) * depth, rotY: side * Math.min(70, curve), rotZ: side * curve * 0.18 }
+          followAngle = side * Math.min(90, curve)
+          next = { posX: mirrorAxis === 'x' ? side * tier * spacing : 0, posY: mirrorAxis === 'y' ? side * tier * spacing : Math.floor(index / 2) * curve, posZ: mirrorAxis === 'z' ? side * tier * spacing : -Math.floor(index / 2) * depth }
         } else if (pattern === 'ring') {
           const angle = (index / targets.length) * Math.PI * 2 - Math.PI / 2
           const radius = spacing * Math.max(1, targets.length / 5)
-          next = { posX: Math.cos(angle) * radius, posY: Math.sin(angle) * radius, posZ: Math.sin(angle) * depth, rotY: (angle * 180 / Math.PI) + 90, rotZ: (angle * 180 / Math.PI) + 90 }
+          followAngle = (angle * 180 / Math.PI) + 90
+          next = { posX: Math.cos(angle) * radius, posY: Math.sin(angle) * radius, posZ: Math.sin(angle) * depth }
+        }
+        if (pattern !== 'mirror') {
+          const u = next.posX ?? 0, v = next.posY ?? 0, w = next.posZ ?? 0
+          if (plane === 'xz') next = { ...next, posX: u, posY: w, posZ: v }
+          if (plane === 'yz') next = { ...next, posX: w, posY: u, posZ: v }
+        }
+        if (rotationAxis !== 'none') {
+          const key = `rot${rotationAxis.toUpperCase()}` as 'rotX' | 'rotY' | 'rotZ'
+          next = { ...next, [key]: object.transform[key] + followAngle }
         }
         transforms.set(object.id, next)
       })
       return { ...state, objects: state.objects.map(o => ids.has(o.id) ? { ...o, transform: { ...o.transform, ...transforms.get(o.id)! } } : o) }
     }
-    case 'APPLY_LINKED_LAYOUT': {
+    case 'GENERATE_PATTERN': {
       const source = state.objects.find(o => o.id === state.selectedId && (o.elementType === 'device' || o.elementType == null))
       if (!source) return state
       const count = Math.max(2, Math.min(32, action.payload.count))
-      const groupId = source.linkedGroupId ?? genId()
-      const retained = state.objects.filter(o => o.linkedGroupId !== groupId || o.id === source.id)
+      const linked = action.payload.mode === 'linked'
+      const groupId = linked ? (source.linkedGroupId ?? genId()) : undefined
+      const retained = groupId ? state.objects.filter(o => o.linkedGroupId !== groupId || o.id === source.id) : state.objects
       const copies: SceneObject[] = Array.from({ length: count }, (_, index) => ({
         ...source,
         id: index === 0 ? source.id : genId(),
@@ -284,10 +305,10 @@ function reducer(state: AppState, action: Action): AppState {
         device: { ...source.device },
         transform: { ...source.transform },
         linkedGroupId: groupId,
-        linkedIndex: index,
+        linkedIndex: linked ? index : undefined,
       }))
       const temporary = { ...state, objects: [...retained.filter(o => o.id !== source.id), ...copies], selectedId: source.id }
-      return reducer(temporary, { type: 'APPLY_LAYOUT', payload: action.payload })
+      return reducer(temporary, { type: 'APPLY_LAYOUT', payload: { ...action.payload, targetIds: copies.map(o => o.id) } })
     }
     default:
       return state
@@ -353,11 +374,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const importProject = useCallback((s: AppState) => dispatch({ type: 'IMPORT_PROJECT', payload: s }), [])
   const alignObjects = useCallback((axis: 'horizontal' | 'vertical') => dispatch({ type: 'ALIGN_OBJECTS', payload: { axis } }), [])
   const distributeObjects = useCallback((axis: 'horizontal' | 'vertical') => dispatch({ type: 'DISTRIBUTE_OBJECTS', payload: { axis } }), [])
-  const applyLayout = useCallback((pattern: LayoutPattern, spacing: number, depth: number, curve: number) => dispatch({ type: 'APPLY_LAYOUT', payload: { pattern, spacing, depth, curve } }), [])
-  const applyLinkedLayout = useCallback((pattern: LayoutPattern, spacing: number, depth: number, curve: number, count: number) => dispatch({ type: 'APPLY_LINKED_LAYOUT', payload: { pattern, spacing, depth, curve, count } }), [])
+  const applyLayout = useCallback((pattern: LayoutPattern, spacing: number, depth: number, curve: number, plane?: PatternPlane, mirrorAxis?: PatternAxis, rotationAxis?: RotationFollowAxis) => dispatch({ type: 'APPLY_LAYOUT', payload: { pattern, spacing, depth, curve, plane, mirrorAxis, rotationAxis } }), [])
+  const generatePattern = useCallback((pattern: LayoutPattern, spacing: number, depth: number, curve: number, count: number, mode: CopyMode, plane: PatternPlane, mirrorAxis: PatternAxis, rotationAxis: RotationFollowAxis) => dispatch({ type: 'GENERATE_PATTERN', payload: { pattern, spacing, depth, curve, count, mode, plane, mirrorAxis, rotationAxis } }), [])
 
   return (
-    <EditorContext.Provider value={{ state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, duplicateObject, updateObject, updateDevice, updateTransform, updateText, updateShape, reorderObjects, setBackground, setLighting, setTool, toggleExportModal, toggleTemplatesModal, loadTemplate, importProject, alignObjects, distributeObjects, applyLayout, applyLinkedLayout }}>
+    <EditorContext.Provider value={{ state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, duplicateObject, updateObject, updateDevice, updateTransform, updateText, updateShape, reorderObjects, setBackground, setLighting, setTool, toggleExportModal, toggleTemplatesModal, loadTemplate, importProject, alignObjects, distributeObjects, applyLayout, generatePattern }}>
       {children}
     </EditorContext.Provider>
   )
@@ -368,3 +389,4 @@ export function useEditor() {
   if (!ctx) throw new Error('useEditor must be used within EditorProvider')
   return ctx
 }
+          followAngle = angle * 180 / Math.PI

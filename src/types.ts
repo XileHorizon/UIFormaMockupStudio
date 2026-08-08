@@ -20,6 +20,10 @@ export type AnglePreset =
   | 'iso-left' | 'iso-right' | 'dramatic-low' | 'floating-quarter'
 
 export type LayoutPattern = 'line' | 'fan' | 'arc' | 'staircase' | 'grid' | 'rainbow' | 'mirror' | 'ring'
+export type PatternPlane = 'xy' | 'xz' | 'yz'
+export type PatternAxis = 'x' | 'y' | 'z'
+export type RotationFollowAxis = PatternAxis | 'none'
+export type CopyMode = 'clone' | 'linked'
 
 // ── Sub-configs ───────────────────────────────────────────────────────────────
 

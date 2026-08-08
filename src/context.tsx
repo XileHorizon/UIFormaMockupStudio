@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig, LayoutPattern } from './types'
+import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig, LayoutPattern, PatternPlane, PatternAxis, RotationFollowAxis, CopyMode } from './types'
 
 export interface EditorContextValue {
   state: AppState
@@ -25,8 +25,8 @@ export interface EditorContextValue {
   importProject: (state: AppState) => void
   alignObjects: (axis: 'horizontal' | 'vertical') => void
   distributeObjects: (axis: 'horizontal' | 'vertical') => void
-  applyLayout: (pattern: LayoutPattern, spacing: number, depth: number, curve: number) => void
-  applyLinkedLayout: (pattern: LayoutPattern, spacing: number, depth: number, curve: number, count: number) => void
+  applyLayout: (pattern: LayoutPattern, spacing: number, depth: number, curve: number, plane?: PatternPlane, mirrorAxis?: PatternAxis, rotationAxis?: RotationFollowAxis) => void
+  generatePattern: (pattern: LayoutPattern, spacing: number, depth: number, curve: number, count: number, mode: CopyMode, plane: PatternPlane, mirrorAxis: PatternAxis, rotationAxis: RotationFollowAxis) => void
 }
 
 export const EditorContext = createContext<EditorContextValue | null>(null)
