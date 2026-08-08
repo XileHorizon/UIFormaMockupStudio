@@ -132,7 +132,35 @@ function PathTracingController() {
         targetSamplesRef.current = Math.max(1, Math.min(256, detail.samples ?? 32))
         readySentRef.current = false
         window.dispatchEvent(new CustomEvent('mockframe-pathtrace-progress', { detail: { samples: 0, target: targetSamplesRef.current } }))
-        tracer.setScene(scene, camera)
+
+        // The raster preview is intentionally tuned with low, artistic light
+        // values and an AmbientLight. The path tracer does not support ambient
+        // lights and interprets the remaining lights in physical units, so
+        // passing the preview rig through unchanged leaves non-emissive device
+        // materials almost black. Temporarily translate the rig to useful path
+        // tracing values while its light/environment uniforms are captured.
+        const originalEnvironmentIntensity = scene.environmentIntensity
+        const boostedLights: Array<{ light: THREE.Light; intensity: number }> = []
+        scene.traverse(child => {
+          if (
+            (child instanceof THREE.DirectionalLight ||
+              child instanceof THREE.SpotLight ||
+              child instanceof THREE.PointLight ||
+              child instanceof THREE.RectAreaLight) &&
+            child.visible
+          ) {
+            boostedLights.push({ light: child, intensity: child.intensity })
+            child.intensity *= 4
+          }
+        })
+        scene.environmentIntensity = Math.max(0.7, (originalEnvironmentIntensity ?? 1) * 2.5)
+        scene.updateMatrixWorld(true)
+        try {
+          tracer.setScene(scene, camera)
+        } finally {
+          scene.environmentIntensity = originalEnvironmentIntensity
+          boostedLights.forEach(({ light, intensity }) => { light.intensity = intensity })
+        }
         if (disposed) return
         tracer.reset()
         activeRef.current = true
