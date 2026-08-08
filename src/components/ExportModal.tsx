@@ -16,6 +16,10 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
   const [shadowLevel, setShadowLevel] = useState(2)
   const [quality, setQuality] = useState(95)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [rayTracing, setRayTracing] = useState(false)
+  const [raySamples, setRaySamples] = useState(32)
+  const [rayBounces, setRayBounces] = useState(6)
+  const [renderProgress, setRenderProgress] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const [done, setDone] = useState(false)
@@ -31,6 +35,28 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
       canvasRef.current.style.background = 'transparent'
     }
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+    if (rayTracing) {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = window.setTimeout(() => finish(new Error('Ray tracing timed out. Try fewer samples or a lower GPU setting.')), 120_000)
+        const onReady = () => finish()
+        const onError = (event: Event) => finish(new Error((event as CustomEvent<{ message: string }>).detail?.message || 'Ray tracing failed for this scene.'))
+        const onProgress = (event: Event) => {
+          const { samples, target } = (event as CustomEvent<{ samples: number; target: number }>).detail
+          setRenderProgress(`Ray tracing ${samples}/${target} samples`)
+        }
+        const finish = (error?: Error) => {
+          window.clearTimeout(timeout)
+          window.removeEventListener('mockframe-pathtrace-ready', onReady)
+          window.removeEventListener('mockframe-pathtrace-error', onError)
+          window.removeEventListener('mockframe-pathtrace-progress', onProgress)
+          error ? reject(error) : resolve()
+        }
+        window.addEventListener('mockframe-pathtrace-ready', onReady)
+        window.addEventListener('mockframe-pathtrace-error', onError)
+        window.addEventListener('mockframe-pathtrace-progress', onProgress)
+        window.dispatchEvent(new CustomEvent('mockframe-pathtrace', { detail: { enabled: true, samples: raySamples, bounces: rayBounces } }))
+      })
+    }
     try {
       return await capture()
     } finally {
@@ -39,7 +65,9 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
         canvasRef.current.style.background = previousBackground
       }
       selectObject(previousSelection)
+      window.dispatchEvent(new CustomEvent('mockframe-pathtrace', { detail: { enabled: false } }))
       window.dispatchEvent(new CustomEvent('mockframe-render-quality', { detail: { dpr: 2, shadowMapSize: 2048 } }))
+      setRenderProgress(null)
     }
   }
 
@@ -208,6 +236,21 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
           </button>
 
           {showAdvanced && <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: 12, borderRadius: 8, border: '1px solid var(--border-subtle)', background: 'var(--surface)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, fontSize: 10, color: 'var(--text-muted)' }}>
+              <span><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 2 }}>Ray tracing</strong>Experimental progressive GPU path tracing</span>
+              <input type="checkbox" checked={rayTracing} onChange={event => setRayTracing(event.target.checked)} />
+            </label>
+            {rayTracing && <>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Samples</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{raySamples}</span></div>
+                <input type="range" min={8} max={128} step={8} value={raySamples} onChange={event => setRaySamples(Number(event.target.value))} style={{ width: '100%' }} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Light bounces</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{rayBounces}</span></div>
+                <input type="range" min={1} max={12} step={1} value={rayBounces} onChange={event => setRayBounces(Number(event.target.value))} style={{ width: '100%' }} />
+              </div>
+              <div style={{ fontSize: 9, color: 'var(--text-dim)', lineHeight: 1.45 }}>Traces the 3D devices, physical materials, lights, and HDR environment. HTML text and shapes are composited after the traced pass.</div>
+            </>}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>GPU supersampling</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{gpuDpr.toFixed(1)}×</span></div>
               <input type="range" min={1} max={4} step={0.5} value={gpuDpr} onChange={event => setGpuDpr(Number(event.target.value))} style={{ width: '100%' }} />
@@ -282,7 +325,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
             }}
           >
             {exporting ? (
-              <>Exporting...</>
+              <>{renderProgress ?? 'Exporting...'}</>
             ) : done ? (
               <>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

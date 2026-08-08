@@ -1,5 +1,5 @@
 import { Suspense, useRef, useCallback, useEffect, useState, type MutableRefObject, type PointerEvent } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { useEditor } from '../store'
@@ -86,6 +86,78 @@ function SceneCamera({ visibleObjectCount, manuallyAdjusted }: { visibleObjectCo
     camera.lookAt(0, 0, 0)
     camera.updateProjectionMatrix()
   }, [camera, manuallyAdjusted, visibleObjectCount])
+
+  return null
+}
+
+function PathTracingController() {
+  const { gl, scene, camera } = useThree()
+  const tracerRef = useRef<import('three-gpu-pathtracer').WebGLPathTracer | null>(null)
+  const activeRef = useRef(false)
+  const targetSamplesRef = useRef(32)
+  const readySentRef = useRef(false)
+
+  useEffect(() => {
+    let disposed = false
+    const configure = async (event: Event) => {
+      const detail = (event as CustomEvent<{ enabled: boolean; samples?: number; bounces?: number }>).detail
+      if (!detail?.enabled) {
+        activeRef.current = false
+        readySentRef.current = false
+        tracerRef.current?.reset()
+        return
+      }
+      try {
+        if (!tracerRef.current) {
+          const { WebGLPathTracer } = await import('three-gpu-pathtracer')
+          if (disposed) return
+          tracerRef.current = new WebGLPathTracer(gl)
+          tracerRef.current.tiles.set(1, 1)
+          tracerRef.current.rasterizeScene = false
+          tracerRef.current.renderDelay = 0
+          tracerRef.current.fadeDuration = 0
+          tracerRef.current.minSamples = 1
+        }
+        const tracer = tracerRef.current
+        tracer.bounces = Math.max(1, Math.min(12, detail.bounces ?? 6))
+        tracer.textureSize.set(2048, 2048)
+        targetSamplesRef.current = Math.max(1, Math.min(256, detail.samples ?? 32))
+        readySentRef.current = false
+        window.dispatchEvent(new CustomEvent('mockframe-pathtrace-progress', { detail: { samples: 0, target: targetSamplesRef.current } }))
+        tracer.setScene(scene, camera)
+        if (disposed) return
+        tracer.reset()
+        activeRef.current = true
+      } catch (error) {
+        activeRef.current = false
+        window.dispatchEvent(new CustomEvent('mockframe-pathtrace-error', { detail: { message: error instanceof Error ? error.message : 'Path tracer could not process this scene.' } }))
+      }
+    }
+    window.addEventListener('mockframe-pathtrace', configure)
+    return () => {
+      disposed = true
+      window.removeEventListener('mockframe-pathtrace', configure)
+      tracerRef.current?.dispose()
+      tracerRef.current = null
+    }
+  }, [camera, gl, scene])
+
+  useFrame(() => {
+    const tracer = tracerRef.current
+    if (!activeRef.current || !tracer) {
+      gl.render(scene, camera)
+      return
+    }
+    if (tracer.samples < targetSamplesRef.current) {
+      tracer.renderSample()
+      const samples = Math.floor(tracer.samples)
+      window.dispatchEvent(new CustomEvent('mockframe-pathtrace-progress', { detail: { samples, target: targetSamplesRef.current } }))
+    }
+    if (tracer.samples >= targetSamplesRef.current && !readySentRef.current) {
+      readySentRef.current = true
+      window.dispatchEvent(new CustomEvent('mockframe-pathtrace-ready'))
+    }
+  }, 1)
 
   return null
 }
@@ -190,6 +262,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             onPointerMissed={() => selectObject(null)}
           >
             <SceneCamera visibleObjectCount={objects.filter(object => object.visible).length} manuallyAdjusted={cameraManuallyAdjusted} />
+            <PathTracingController />
             <ambientLight intensity={0.08 * lighting.ambientIntensity} />
             <directionalLight
               position={[-5, 8, 7]}
