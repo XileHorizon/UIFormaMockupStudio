@@ -80,7 +80,20 @@ function updateObj(objects: SceneObject[], id: string, up: (o: SceneObject) => S
 
 function offsetForNew(objects: SceneObject[]): Partial<Transform> {
   const n = objects.length
-  return { posX: (n % 5) * 30 - 60, posY: (n % 3) * 20 - 20 }
+  // Canvas transforms are converted to Three.js units at roughly 95 px/unit.
+  // Imported devices are 4-6 units across, so the old 20-30 px offsets made
+  // every newly-added model occupy effectively the same point in space.
+  const slots = [
+    { posX: 0, posY: 0 },
+    { posX: -420, posY: -300 },
+    { posX: 0, posY: -300 },
+    { posX: 420, posY: -300 },
+    { posX: -210, posY: 300 },
+    { posX: 210, posY: 300 },
+  ]
+  const slot = slots[n % slots.length]
+  const page = Math.floor(n / slots.length)
+  return { posX: slot.posX + page * 45, posY: slot.posY + page * 45 }
 }
 
 const DEVICE_NAMES: Partial<Record<DeviceType, string>> = {
