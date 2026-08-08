@@ -47,6 +47,14 @@ export interface LightingConfig {
   shadowSoftness: number
   rimLight: boolean
   contactShadow: boolean
+  keyIntensity?: number
+  fillIntensity?: number
+  rimIntensity?: number
+  environmentIntensity?: number
+  environmentRotation?: number
+  colorTemperature?: number
+  keyAzimuth?: number
+  keyElevation?: number
 }
 
 export interface DeviceConfig {

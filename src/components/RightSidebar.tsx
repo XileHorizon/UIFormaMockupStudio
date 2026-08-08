@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useEditor } from '../store'
-import type { LightingPreset, BackgroundType, DeviceColor, MaterialPresetId } from '../types'
+import type { LightingPreset, LightingConfig, BackgroundType, DeviceColor, MaterialPresetId } from '../types'
 import { LIGHTING_CONFIGS, MATERIAL_PRESETS } from '../types'
 
 // ── Primitives ────────────────────────────────────────────────────────────────
@@ -102,6 +102,15 @@ const BG_OPTIONS: { type: BackgroundType; label: string }[] = [
   { type: 'gradient-linear', label: 'Linear' }, { type: 'gradient-radial', label: 'Radial' },
   { type: 'blob', label: 'Blob' }, { type: 'grid', label: 'Grid' },
 ]
+
+const LIGHTING_RIGS: Record<LightingPreset, Partial<LightingConfig>> = {
+  'soft-studio': { keyIntensity: 0.88, fillIntensity: 0.24, rimIntensity: 0.58, environmentIntensity: 0.26, environmentRotation: -26, colorTemperature: 5200, keyAzimuth: -35, keyElevation: 42 },
+  'bright-product': { keyIntensity: 1.35, fillIntensity: 0.5, rimIntensity: 0.4, environmentIntensity: 0.48, environmentRotation: 15, colorTemperature: 6000, keyAzimuth: -25, keyElevation: 55 },
+  'dark-dramatic': { keyIntensity: 1.15, fillIntensity: 0.06, rimIntensity: 1.05, environmentIntensity: 0.1, environmentRotation: -65, colorTemperature: 4300, keyAzimuth: -55, keyElevation: 28 },
+  'cool-technology': { keyIntensity: 0.92, fillIntensity: 0.34, rimIntensity: 0.86, environmentIntensity: 0.24, environmentRotation: 45, colorTemperature: 7600, keyAzimuth: -18, keyElevation: 35 },
+  'warm-editorial': { keyIntensity: 1.08, fillIntensity: 0.2, rimIntensity: 0.32, environmentIntensity: 0.3, environmentRotation: -10, colorTemperature: 3600, keyAzimuth: -48, keyElevation: 48 },
+  'minimal-portfolio': { keyIntensity: 0.72, fillIntensity: 0.28, rimIntensity: 0.14, environmentIntensity: 0.42, environmentRotation: 0, colorTemperature: 5600, keyAzimuth: -30, keyElevation: 62 },
+}
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -294,7 +303,7 @@ export default function RightSidebar() {
         <div style={{ paddingBottom: 10 }}>
           <div style={{ padding: '0 10px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
             {(Object.keys(LIGHTING_CONFIGS) as LightingPreset[]).map(preset => (
-              <button key={preset} onClick={() => setLighting({ preset })}
+              <button key={preset} onClick={() => setLighting({ preset, ...LIGHTING_RIGS[preset] })}
                 style={{ padding: '7px 6px', borderRadius: 6, border: lighting.preset === preset ? '1px solid var(--accent)' : '1px solid var(--border)', background: lighting.preset === preset ? 'var(--accent-glow)' : 'var(--surface)', color: lighting.preset === preset ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)', textAlign: 'center' }}
                 onMouseEnter={e => { if (lighting.preset !== preset) { (e.currentTarget).style.background = 'var(--surface-2)'; (e.currentTarget).style.color = 'var(--text)' } }}
                 onMouseLeave={e => { if (lighting.preset !== preset) { (e.currentTarget).style.background = 'var(--surface)'; (e.currentTarget).style.color = 'var(--text-muted)' } }}
@@ -303,6 +312,14 @@ export default function RightSidebar() {
               </button>
             ))}
           </div>
+          <Row label="Key"><Slider value={lighting.keyIntensity ?? 0.88} min={0} max={3} fmt={v => v.toFixed(2)} onChange={v => setLighting({ keyIntensity: v })} /></Row>
+          <Row label="Fill"><Slider value={lighting.fillIntensity ?? 0.24} min={0} max={2} fmt={v => v.toFixed(2)} onChange={v => setLighting({ fillIntensity: v })} /></Row>
+          <Row label="Rim"><Slider value={lighting.rimIntensity ?? 0.58} min={0} max={3} fmt={v => v.toFixed(2)} onChange={v => setLighting({ rimIntensity: v })} /></Row>
+          <Row label="Environment"><Slider value={lighting.environmentIntensity ?? 0.26} min={0} max={2} fmt={v => v.toFixed(2)} onChange={v => setLighting({ environmentIntensity: v })} /></Row>
+          <Row label="HDRI rotate"><Slider value={lighting.environmentRotation ?? -26} min={-180} max={180} step={1} fmt={v => `${v.toFixed(0)}°`} onChange={v => setLighting({ environmentRotation: v })} /></Row>
+          <Row label="Temperature"><Slider value={lighting.colorTemperature ?? 5200} min={2800} max={9000} step={100} fmt={v => `${v.toFixed(0)}K`} onChange={v => setLighting({ colorTemperature: v })} /></Row>
+          <Row label="Key around"><Slider value={lighting.keyAzimuth ?? -35} min={-180} max={180} step={1} fmt={v => `${v.toFixed(0)}°`} onChange={v => setLighting({ keyAzimuth: v })} /></Row>
+          <Row label="Key height"><Slider value={lighting.keyElevation ?? 42} min={5} max={85} step={1} fmt={v => `${v.toFixed(0)}°`} onChange={v => setLighting({ keyElevation: v })} /></Row>
         </div>
       )}
 

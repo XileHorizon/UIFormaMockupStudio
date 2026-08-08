@@ -26,6 +26,14 @@ function getCanvasBackground(bg: { type: string; color: string; gradientFrom: st
   }
 }
 
+function kelvinColor(kelvin: number) {
+  const temperature = Math.max(1000, Math.min(12000, kelvin)) / 100
+  const red = temperature <= 66 ? 255 : 329.698727446 * Math.pow(temperature - 60, -0.1332047592)
+  const green = temperature <= 66 ? 99.4708025861 * Math.log(temperature) - 161.1195681661 : 288.1221695283 * Math.pow(temperature - 60, -0.0755148492)
+  const blue = temperature >= 66 ? 255 : temperature <= 19 ? 0 : 138.5177312231 * Math.log(temperature - 10) - 305.0447927307
+  return new THREE.Color(Math.max(0, Math.min(255, red)) / 255, Math.max(0, Math.min(255, green)) / 255, Math.max(0, Math.min(255, blue)) / 255)
+}
+
 interface DragState {
   startX: number; startY: number; startRotX: number; startRotY: number
   objectId: string | null; active: boolean
@@ -227,6 +235,14 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
   const bg = getCanvasBackground(background)
   const isTransparent = background.type === 'transparent'
   const isGrid = background.type === 'grid'
+  const keyAzimuth = THREE.MathUtils.degToRad(lighting.keyAzimuth ?? -35)
+  const keyElevation = THREE.MathUtils.degToRad(lighting.keyElevation ?? 42)
+  const keyPosition: [number, number, number] = [
+    Math.sin(keyAzimuth) * Math.cos(keyElevation) * 10,
+    Math.sin(keyElevation) * 10,
+    Math.cos(keyAzimuth) * Math.cos(keyElevation) * 10,
+  ]
+  const keyColor = kelvinColor(lighting.colorTemperature ?? 5200)
 
   return (
     <div
@@ -265,22 +281,22 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             <PathTracingController />
             <ambientLight intensity={0.08 * lighting.ambientIntensity} />
             <directionalLight
-              position={[-5, 8, 7]}
-              intensity={0.88 * lighting.intensity}
-              color="#fff8ef"
+              position={keyPosition}
+              intensity={(lighting.keyIntensity ?? 0.88) * lighting.intensity}
+              color={keyColor}
               castShadow
               shadow-mapSize={[renderQuality.shadowMapSize, renderQuality.shadowMapSize]}
               shadow-bias={-0.00015}
               shadow-normalBias={0.025}
             />
-            <directionalLight position={[6, 2, 4]} intensity={0.24 * lighting.intensity} color="#c5d8ff" />
-            {lighting.rimLight && <spotLight position={[1, 5, -6]} intensity={0.58 * lighting.intensity} color="#d6e4ff" angle={0.55} penumbra={1} />}
+            <directionalLight position={[6, 2, 4]} intensity={(lighting.fillIntensity ?? 0.24) * lighting.intensity} color="#c5d8ff" />
+            {lighting.rimLight && <spotLight position={[1, 5, -6]} intensity={(lighting.rimIntensity ?? 0.58) * lighting.intensity} color="#d6e4ff" angle={0.55} penumbra={1} />}
 
             <Suspense fallback={null}>
               <Environment
                 files="/environments/studio_small_03_1k.hdr"
-                environmentIntensity={0.2 * lighting.intensity + 0.06}
-                environmentRotation={[0, -0.45, 0]}
+                environmentIntensity={lighting.environmentIntensity ?? 0.26}
+                environmentRotation={[0, THREE.MathUtils.degToRad(lighting.environmentRotation ?? -26), 0]}
               />
               {objects.map(obj => obj.visible && obj.elementType === 'device' && (obj.device?.type === 'monitor' || obj.device?.type === 'studio-display') ? (
                 <StudioMonitor3D
