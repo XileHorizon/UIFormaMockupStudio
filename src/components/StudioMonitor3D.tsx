@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
-import type { DeviceConfig, LightingConfig, ScreenContentType, Transform } from '../types'
+import type { DeviceConfig, ScreenContentType, Transform } from '../types'
 
 interface Props {
   device: DeviceConfig
   transform: Transform
   screenshot: string | null
   screenshotType: ScreenContentType
-  lighting: LightingConfig
   selected: boolean
   onSelect: () => void
 }
@@ -25,9 +24,10 @@ const BODY_COLORS = {
 interface ScreenTextureOptions {
   aspect?: number
   flipY?: boolean
+  rotation?: number
 }
 
-function fitTextureToScreen(texture: THREE.Texture, screenAspect: number, flipY: boolean) {
+function fitTextureToScreen(texture: THREE.Texture, screenAspect: number, flipY: boolean, rotation: number) {
   const image = texture.image as { width?: number; height?: number; videoWidth?: number; videoHeight?: number } | undefined
   const width = image?.videoWidth || image?.width || 1
   const height = image?.videoHeight || image?.height || 1
@@ -49,11 +49,14 @@ function fitTextureToScreen(texture: THREE.Texture, screenAspect: number, flipY:
   }
 
   texture.flipY = flipY
+  texture.center.set(0.5, 0.5)
+  texture.rotation = rotation
+  texture.updateMatrix()
   texture.needsUpdate = true
 }
 
 export function useScreenTexture(source: string | null, type: ScreenContentType, options: ScreenTextureOptions = {}) {
-  const { aspect = 16 / 9, flipY = true } = options
+  const { aspect = 16 / 9, flipY = true, rotation = 0 } = options
   const placeholder = useMemo(() => {
     const canvas = document.createElement('canvas')
     canvas.width = 1400
@@ -78,9 +81,9 @@ export function useScreenTexture(source: string | null, type: ScreenContentType,
     }
     const texture = new THREE.CanvasTexture(canvas)
     texture.colorSpace = THREE.SRGBColorSpace
-    fitTextureToScreen(texture, aspect, flipY)
+    fitTextureToScreen(texture, aspect, flipY, rotation)
     return texture
-  }, [aspect, flipY])
+  }, [aspect, flipY, rotation])
 
   const [texture, setTexture] = useState<THREE.Texture>(placeholder)
 
@@ -99,7 +102,7 @@ export function useScreenTexture(source: string | null, type: ScreenContentType,
       void video.play()
       const next = new THREE.VideoTexture(video)
       next.colorSpace = THREE.SRGBColorSpace
-      video.addEventListener('loadedmetadata', () => fitTextureToScreen(next, aspect, flipY), { once: true })
+      video.addEventListener('loadedmetadata', () => fitTextureToScreen(next, aspect, flipY, rotation), { once: true })
       setTexture(next)
       return () => {
         video.pause()
@@ -112,20 +115,20 @@ export function useScreenTexture(source: string | null, type: ScreenContentType,
       if (!active) return next.dispose()
       next.colorSpace = THREE.SRGBColorSpace
       next.anisotropy = 8
-      fitTextureToScreen(next, aspect, flipY)
+      fitTextureToScreen(next, aspect, flipY, rotation)
       setTexture(next)
     })
     return () => { active = false }
-  }, [aspect, flipY, placeholder, source, type])
+  }, [aspect, flipY, placeholder, rotation, source, type])
 
   return texture
 }
 
-export default function StudioMonitor3D({ device, transform, screenshot, screenshotType, lighting, selected, onSelect }: Props) {
+export default function StudioMonitor3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const texture = useScreenTexture(screenshot, screenshotType, { aspect: 5.59 / 3.22 })
   const body = BODY_COLORS[device.color]
-  const roughness = device.materialPreset === 'matte' ? 0.78 : 0.32
-  const metalness = device.materialPreset === 'glass' ? 0.25 : 0.82
+  const roughness = device.materialPreset === 'matte' ? 0.72 : 0.42
+  const metalness = device.materialPreset === 'glass' ? 0.25 : 0.74
 
   return (
     <group
@@ -142,11 +145,11 @@ export default function StudioMonitor3D({ device, transform, screenshot, screens
       }}
     >
       <RoundedBox args={[6.15, 3.82, 0.28]} radius={0.16} smoothness={6} position={[0, 0.85, 0]} castShadow receiveShadow>
-        <meshPhysicalMaterial color={body} metalness={metalness} roughness={roughness} clearcoat={0.35} clearcoatRoughness={0.22} />
+        <meshPhysicalMaterial color={body} metalness={metalness} roughness={roughness} clearcoat={0.08} clearcoatRoughness={0.42} envMapIntensity={0.52} />
       </RoundedBox>
 
       <RoundedBox args={[5.82, 3.48, 0.035]} radius={0.08} smoothness={5} position={[0, 0.85, 0.157]}>
-        <meshStandardMaterial color="#050506" roughness={0.16} metalness={0.05} />
+        <meshStandardMaterial color="#07080b" roughness={0.28} metalness={0.04} envMapIntensity={0.4} />
       </RoundedBox>
 
       <mesh position={[0, 0.85, 0.18]}>
@@ -157,24 +160,24 @@ export default function StudioMonitor3D({ device, transform, screenshot, screens
       {device.showReflection && (
         <mesh position={[0, 0.85, 0.186]}>
           <planeGeometry args={[5.59, 3.22]} />
-          <meshPhysicalMaterial transparent opacity={0.075} color="#dcecff" roughness={0.05} metalness={0} />
+          <meshPhysicalMaterial transparent opacity={0.035} color="#dcecff" roughness={0.08} metalness={0} depthWrite={false} />
         </mesh>
       )}
 
       <mesh position={[0, 0.84, -0.17]} rotation={[Math.PI / 2, 0, 0]} castShadow>
         <cylinderGeometry args={[0.24, 0.24, 0.055, 48]} />
-        <meshStandardMaterial color="#9b9c9f" metalness={0.9} roughness={0.25} />
+        <meshStandardMaterial color="#92959a" metalness={0.72} roughness={0.42} envMapIntensity={0.5} />
       </mesh>
 
       <RoundedBox args={[0.68, 2.25, 0.19]} radius={0.09} smoothness={5} position={[0, -1.38, -0.03]} castShadow>
-        <meshPhysicalMaterial color={body} metalness={0.88} roughness={0.3} clearcoat={0.22} />
+        <meshPhysicalMaterial color={body} metalness={0.74} roughness={0.42} clearcoat={0.08} envMapIntensity={0.5} />
       </RoundedBox>
 
       <RoundedBox args={[2.75, 0.13, 1.2]} radius={0.11} smoothness={6} position={[0, -2.47, 0.17]} castShadow receiveShadow>
-        <meshPhysicalMaterial color={body} metalness={0.86} roughness={0.34} clearcoat={0.2} />
+        <meshPhysicalMaterial color={body} metalness={0.74} roughness={0.44} clearcoat={0.06} envMapIntensity={0.5} />
       </RoundedBox>
 
-      <mesh position={[0, 0.85, 0.205]}>
+      <mesh position={[0, 2.43, 0.205]}>
         <circleGeometry args={[0.024, 24]} />
         <meshBasicMaterial color="#111318" />
       </mesh>
@@ -185,12 +188,6 @@ export default function StudioMonitor3D({ device, transform, screenshot, screens
         </RoundedBox>
       )}
 
-      {device.showShadow && lighting.contactShadow && (
-        <mesh position={[0, -2.57, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <planeGeometry args={[8, 5]} />
-          <shadowMaterial transparent opacity={lighting.shadowOpacity} />
-        </mesh>
-      )}
     </group>
   )
 }

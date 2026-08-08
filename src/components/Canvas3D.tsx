@@ -1,4 +1,4 @@
-import { Suspense, useRef, useCallback, useEffect, type PointerEvent } from 'react'
+import { Suspense, useRef, useCallback, useEffect, type MutableRefObject, type PointerEvent } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -31,10 +31,11 @@ interface DragState {
   objectId: string | null; active: boolean
 }
 
-function SceneCamera({ visibleObjectCount }: { visibleObjectCount: number }) {
+function SceneCamera({ visibleObjectCount, manuallyAdjusted }: { visibleObjectCount: number; manuallyAdjusted: MutableRefObject<boolean> }) {
   const { camera } = useThree()
 
   useEffect(() => {
+    if (manuallyAdjusted.current) return
     // The editor's sidebars leave a narrow viewport. Pull the camera back as a
     // composition grows so the placement grid remains visible in both the
     // editor and exported image instead of being clipped like a one-device shot.
@@ -42,7 +43,7 @@ function SceneCamera({ visibleObjectCount }: { visibleObjectCount: number }) {
     camera.position.set(0, 0.1, distance)
     camera.lookAt(0, 0, 0)
     camera.updateProjectionMatrix()
-  }, [camera, visibleObjectCount])
+  }, [camera, manuallyAdjusted, visibleObjectCount])
 
   return null
 }
@@ -53,6 +54,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
 
   const dragRef = useRef<DragState>({ startX: 0, startY: 0, startRotX: 0, startRotY: 0, objectId: null, active: false })
   const containerRef = useRef<HTMLDivElement>(null)
+  const cameraManuallyAdjusted = useRef(false)
 
   const onCanvasPointerDown = useCallback((e: PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return
@@ -136,30 +138,30 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
               alpha: true,
               preserveDrawingBuffer: true,
               toneMapping: THREE.ACESFilmicToneMapping,
-              toneMappingExposure: 0.86,
+              toneMappingExposure: 0.9,
               outputColorSpace: THREE.SRGBColorSpace,
             }}
             camera={{ position: [0, 0.1, 11.5], fov: 38, near: 0.1, far: 100 }}
             onPointerMissed={() => selectObject(null)}
           >
-            <SceneCamera visibleObjectCount={objects.filter(object => object.visible).length} />
-            <ambientLight intensity={0.06 * lighting.ambientIntensity} />
+            <SceneCamera visibleObjectCount={objects.filter(object => object.visible).length} manuallyAdjusted={cameraManuallyAdjusted} />
+            <ambientLight intensity={0.08 * lighting.ambientIntensity} />
             <directionalLight
               position={[-5, 8, 7]}
-              intensity={0.72 * lighting.intensity}
+              intensity={0.88 * lighting.intensity}
               color="#fff8ef"
               castShadow
               shadow-mapSize={[2048, 2048]}
               shadow-bias={-0.00015}
               shadow-normalBias={0.025}
             />
-            <directionalLight position={[6, 2, 4]} intensity={0.2 * lighting.intensity} color="#c5d8ff" />
-            {lighting.rimLight && <spotLight position={[1, 5, -6]} intensity={0.9 * lighting.intensity} color="#d6e4ff" angle={0.55} penumbra={1} />}
+            <directionalLight position={[6, 2, 4]} intensity={0.24 * lighting.intensity} color="#c5d8ff" />
+            {lighting.rimLight && <spotLight position={[1, 5, -6]} intensity={0.58 * lighting.intensity} color="#d6e4ff" angle={0.55} penumbra={1} />}
 
             <Suspense fallback={null}>
               <Environment
                 files="/environments/studio_small_03_1k.hdr"
-                environmentIntensity={0.38 * lighting.intensity + 0.08}
+                environmentIntensity={0.2 * lighting.intensity + 0.06}
                 environmentRotation={[0, -0.45, 0]}
               />
               {objects.map(obj => obj.visible && obj.elementType === 'device' && (obj.device?.type === 'monitor' || obj.device?.type === 'studio-display') ? (
@@ -169,7 +171,6 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                   transform={obj.transform}
                   screenshot={obj.screenshot}
                   screenshotType={obj.screenshotType}
-                  lighting={lighting}
                   selected={obj.id === selectedId}
                   onSelect={() => selectObject(obj.id)}
                 />
@@ -226,16 +227,18 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
               ) : null)}
             </Suspense>
 
-            <ContactShadows
-              position={[0, -2.6, 0]}
-              opacity={lighting.shadowOpacity}
-              scale={11}
-              blur={1.8 + lighting.shadowSoftness * 1.8}
-              far={5}
-              resolution={1024}
-              color="#11141a"
-            />
-            <OrbitControls makeDefault enableDamping dampingFactor={0.08} minDistance={7} maxDistance={18} minPolarAngle={Math.PI * 0.28} maxPolarAngle={Math.PI * 0.72} />
+            {objects.some(object => object.visible && object.elementType === 'device' && object.device?.showShadow) && (
+              <ContactShadows
+                position={[0, -2.6, 0]}
+                opacity={lighting.shadowOpacity}
+                scale={11}
+                blur={1.8 + lighting.shadowSoftness * 1.8}
+                far={5}
+                resolution={1024}
+                color="#11141a"
+              />
+            )}
+            <OrbitControls makeDefault enableDamping dampingFactor={0.08} minDistance={7} maxDistance={26} minPolarAngle={Math.PI * 0.28} maxPolarAngle={Math.PI * 0.72} onStart={() => { cameraManuallyAdjusted.current = true }} />
           </Canvas>
         </div>
 

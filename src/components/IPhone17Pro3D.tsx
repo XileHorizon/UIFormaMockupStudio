@@ -1,4 +1,4 @@
-import { Edges } from '@react-three/drei'
+import { Edges, RoundedBox } from '@react-three/drei'
 import { useLoader } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
@@ -17,7 +17,7 @@ interface Props {
 
 const BODY_COLORS = {
   'space-black': '#303236',
-  silver: '#c7c8c9',
+  silver: '#b7b9bd',
   white: '#e3e1dc',
   gold: '#c89773',
   blue: '#547f9c',
@@ -26,7 +26,7 @@ const BODY_COLORS = {
 
 export default function IPhone17Pro3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const source = useLoader(OBJLoader, '/models/iphone-17-pro.obj')
-  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 0.817 / 2.39 })
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.865717 / 3.913856 })
 
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = source.clone(true)
@@ -37,27 +37,29 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
       if (!(child instanceof THREE.Mesh)) return
       child.castShadow = true
       child.receiveShadow = true
+      child.frustumCulled = false
 
       const materials = Array.isArray(child.material) ? child.material : [child.material]
-      child.material = materials.map(sourceMaterial => {
+      const nextMaterials = materials.map(sourceMaterial => {
         const name = sourceMaterial.name.toLowerCase()
         let material: THREE.Material
         if (name === 'display') {
-          material = new THREE.MeshBasicMaterial({
-            map: texture,
-            toneMapped: false,
-            color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
-          })
-        } else if (name.includes('display_borders') || name.includes('dynamic') || name.includes('cam') || name.includes('lidar') || name.includes('mic') || name.includes('warnex')) {
-          material = new THREE.MeshPhysicalMaterial({ color: '#08090a', roughness: 0.16, metalness: 0.18, clearcoat: 0.65 })
+          material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false, color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness), side: THREE.DoubleSide })
+        } else if (name.includes('dynamic')) {
+          material = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+        } else if (name.includes('display_borders') || name.includes('warnex') || name.includes('side_dark') || name.includes('mesh_grill')) {
+          material = new THREE.MeshStandardMaterial({ color: '#08090c', roughness: 0.72, metalness: 0.05, envMapIntensity: 0.22, side: THREE.DoubleSide })
+        } else if (name.includes('cam') || name.includes('lidar') || name.includes('mic')) {
+          material = new THREE.MeshPhysicalMaterial({ color: '#08090c', roughness: 0.24, metalness: 0.14, clearcoat: 0.2, envMapIntensity: 0.42, side: THREE.DoubleSide })
         } else if (name.includes('torch')) {
-          material = new THREE.MeshPhysicalMaterial({ color: '#fff1cd', emissive: '#5c492c', emissiveIntensity: 0.15, roughness: 0.22 })
+          material = new THREE.MeshPhysicalMaterial({ color: '#fff1cd', emissive: '#5c492c', emissiveIntensity: 0.12, roughness: 0.28, side: THREE.DoubleSide })
         } else {
-          material = new THREE.MeshPhysicalMaterial({ color: bodyColor, metalness: 0.86, roughness: device.materialPreset === 'matte' ? 0.66 : 0.3, clearcoat: 0.35 })
+          material = new THREE.MeshPhysicalMaterial({ color: bodyColor, metalness: 0.74, roughness: device.materialPreset === 'matte' ? 0.66 : 0.4, clearcoat: 0.08, envMapIntensity: 0.5, side: THREE.DoubleSide })
         }
         ownedMaterials.push(material)
         return material
       })
+      child.material = Array.isArray(child.material) ? nextMaterials : nextMaterials[0]
     })
 
     next.userData.ownedMaterials = ownedMaterials
@@ -88,8 +90,16 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
       }}
     >
       <group scale={normalizedScale} position={[-center.x * normalizedScale, -center.y * normalizedScale, -center.z * normalizedScale]}>
-        <primitive object={model} />
+        <primitive object={model} dispose={null} />
       </group>
+      <RoundedBox args={[0.66, 0.19, 0.035]} radius={0.09} smoothness={4} position={[-0.018, 1.987, 0.205]}>
+        <meshBasicMaterial color="#050609" />
+      </RoundedBox>
+      {device.showReflection && (
+        <RoundedBox args={[2.02, 4.24, 0.008]} radius={0.17} smoothness={4} position={[0, 0, 0.198]}>
+          <meshPhysicalMaterial transparent opacity={0.02} color="#dcecff" roughness={0.12} metalness={0} depthWrite={false} />
+        </RoundedBox>
+      )}
 
       {selected && (
         <mesh>

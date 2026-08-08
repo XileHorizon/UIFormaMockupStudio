@@ -1,4 +1,4 @@
-import { Edges, useGLTF } from '@react-three/drei'
+import { Edges, RoundedBox, useGLTF } from '@react-three/drei'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
@@ -15,7 +15,7 @@ interface Props {
 
 const BODY_COLORS = {
   'space-black': '#292b2f',
-  silver: '#c7c9cc',
+  silver: '#b8bbc0',
   white: '#e4e3df',
   gold: '#cbb18b',
   blue: '#6f98b8',
@@ -24,7 +24,7 @@ const BODY_COLORS = {
 
 export default function IPadPro3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/ipad-pro.glb', false, false)
-  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.801 / 2.355, flipY: false })
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.6477 / 2.2033, rotation: Math.PI })
 
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = scene.clone(true)
@@ -34,31 +34,32 @@ export default function IPadPro3D({ device, transform, screenshot, screenshotTyp
       if (!(child instanceof THREE.Mesh)) return
       child.castShadow = true
       child.receiveShadow = true
+      child.frustumCulled = false
 
       const materials = Array.isArray(child.material) ? child.material : [child.material]
-      child.material = materials.map(sourceMaterial => {
+      const nextMaterials = materials.map(sourceMaterial => {
         let material: THREE.Material
         if (sourceMaterial.name === 'Material.010') {
-          material = new THREE.MeshBasicMaterial({
-            map: texture,
-            toneMapped: false,
-            color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
-          })
+          material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false, side: THREE.DoubleSide, color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness) })
         } else if (sourceMaterial.name === 'Material.009' || sourceMaterial.name === 'Material.003') {
-          material = new THREE.MeshPhysicalMaterial({ color: '#050506', roughness: 0.12, clearcoat: 0.7 })
+          material = new THREE.MeshPhysicalMaterial({ color: '#050609', roughness: 0.22, clearcoat: 0.18, envMapIntensity: 0.42, side: THREE.DoubleSide })
         } else if (sourceMaterial.name === 'Material' || sourceMaterial.name === 'Material.007' || sourceMaterial.name === 'Material.008') {
           material = new THREE.MeshPhysicalMaterial({
             color: BODY_COLORS[device.color],
-            metalness: 0.88,
-            roughness: device.materialPreset === 'matte' ? 0.68 : 0.3,
-            clearcoat: 0.25,
+            metalness: 0.74,
+            roughness: device.materialPreset === 'matte' ? 0.68 : 0.4,
+            clearcoat: 0.08,
+            envMapIntensity: 0.5,
+            side: THREE.DoubleSide,
           })
         } else {
           material = sourceMaterial.clone()
+          material.side = THREE.DoubleSide
         }
         ownedMaterials.push(material)
         return material
       })
+      child.material = Array.isArray(child.material) ? nextMaterials : nextMaterials[0]
     })
 
     next.updateMatrixWorld(true)
@@ -93,9 +94,16 @@ export default function IPadPro3D({ device, transform, screenshot, screenshotTyp
         onSelect()
       }}
     >
-      <group scale={normalizedScale} position={[-center.x * normalizedScale, -center.y * normalizedScale, -center.z * normalizedScale]}>
-        <primitive object={model} />
+      <group rotation={[0, Math.PI, 0]}>
+        <group scale={normalizedScale} position={[-center.x * normalizedScale, -center.y * normalizedScale, -center.z * normalizedScale]}>
+          <primitive object={model} dispose={null} />
+        </group>
       </group>
+      {device.showReflection && (
+        <RoundedBox args={[3.61, 4.82, 0.012]} radius={0.16} smoothness={4} position={[0, 0, 0.105]}>
+          <meshPhysicalMaterial transparent opacity={0.02} color="#dcecff" roughness={0.12} metalness={0} depthWrite={false} />
+        </RoundedBox>
+      )}
 
       {selected && (
         <mesh>

@@ -1,4 +1,4 @@
-import { Edges } from '@react-three/drei'
+import { Edges, RoundedBox } from '@react-three/drei'
 import { useLoader } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
@@ -30,24 +30,32 @@ export default function IMac2021ThreeD({ device, transform, screenshot, screensh
       if (!(child instanceof THREE.Mesh)) return
       child.castShadow = true
       child.receiveShadow = true
+      child.frustumCulled = false
+      if (/^Mesh[123]\b/.test(child.name)) {
+        child.visible = false
+        return
+      }
       const materials = Array.isArray(child.material) ? child.material : [child.material]
-      child.material = materials.map(sourceMaterial => {
+      const nextMaterials = materials.map(sourceMaterial => {
         const name = sourceMaterial.name.toLowerCase()
         let material: THREE.Material
         if (name.includes('imac_front')) {
-          material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false, side: THREE.DoubleSide, color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness) })
+          material = new THREE.MeshBasicMaterial({ color: '#050609', side: THREE.DoubleSide })
         } else if (name.includes('bezel') || name.includes('display_frame') || name.includes('webcam')) {
-          material = new THREE.MeshPhysicalMaterial({ color: '#050506', roughness: 0.13, clearcoat: 0.65, side: THREE.DoubleSide })
+          material = new THREE.MeshPhysicalMaterial({ color: '#050609', roughness: 0.2, clearcoat: 0.2, side: THREE.DoubleSide, envMapIntensity: 0.45 })
         } else if (name.includes('glass')) {
-          material = new THREE.MeshPhysicalMaterial({ color: '#dcecff', transparent: true, opacity: device.showReflection ? 0.06 : 0, roughness: 0.04, depthWrite: false, side: THREE.DoubleSide })
+          material = child.name.startsWith('Mesh7')
+            ? new THREE.MeshPhysicalMaterial({ color: '#d7d9dc', metalness: 0.08, roughness: 0.34, clearcoat: 0.12, side: THREE.DoubleSide, envMapIntensity: 0.4 })
+            : new THREE.MeshPhysicalMaterial({ color: '#22252a', metalness: 0.25, roughness: 0.24, clearcoat: 0.2, side: THREE.DoubleSide, envMapIntensity: 0.45 })
         } else if (name.includes('metal') || name.includes('aluminum') || name.includes('frontcolor') || name.includes('material13')) {
-          material = new THREE.MeshPhysicalMaterial({ color: BODY_COLORS[device.color], metalness: 0.84, roughness: device.materialPreset === 'matte' ? 0.7 : 0.31, clearcoat: 0.22, side: THREE.DoubleSide })
+          material = new THREE.MeshPhysicalMaterial({ color: BODY_COLORS[device.color], metalness: 0.76, roughness: device.materialPreset === 'matte' ? 0.68 : 0.38, clearcoat: 0.08, side: THREE.DoubleSide, envMapIntensity: 0.5 })
         } else {
-          material = new THREE.MeshStandardMaterial({ color: '#34363a', metalness: 0.42, roughness: 0.5, side: THREE.DoubleSide })
+          material = new THREE.MeshStandardMaterial({ color: '#34363a', metalness: 0.34, roughness: 0.56, side: THREE.DoubleSide, envMapIntensity: 0.4 })
         }
         ownedMaterials.push(material)
         return material
       })
+      child.material = Array.isArray(child.material) ? nextMaterials : nextMaterials[0]
     })
     next.updateMatrixWorld(true)
     const box = new THREE.Box3().setFromObject(next)
@@ -69,8 +77,24 @@ export default function IMac2021ThreeD({ device, transform, screenshot, screensh
       onPointerDown={event => { event.stopPropagation(); onSelect() }}
     >
       <group scale={normalizedScale} position={[-center.x * normalizedScale, -center.y * normalizedScale, -center.z * normalizedScale]}>
-        <primitive object={model} />
+        <primitive object={model} dispose={null} />
       </group>
+      <mesh position={[0, 0.638, 0.205]}>
+        <planeGeometry args={[5.86, 3.315]} />
+        <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} color={new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness)} />
+      </mesh>
+      {device.showReflection && (
+        <mesh position={[0, 0.638, 0.218]}>
+          <planeGeometry args={[5.86, 3.315]} />
+          <meshPhysicalMaterial transparent opacity={0.03} color="#dcecff" roughness={0.08} depthWrite={false} />
+        </mesh>
+      )}
+      <RoundedBox args={[0.58, 1.45, 0.24]} radius={0.06} smoothness={4} position={[0, -1.78, -0.12]} castShadow>
+        <meshPhysicalMaterial color={BODY_COLORS[device.color]} metalness={0.76} roughness={0.4} clearcoat={0.06} envMapIntensity={0.5} />
+      </RoundedBox>
+      <RoundedBox args={[2.55, 0.14, 1.02]} radius={0.09} smoothness={5} position={[0, -2.46, 0.16]} castShadow receiveShadow>
+        <meshPhysicalMaterial color={BODY_COLORS[device.color]} metalness={0.76} roughness={0.42} clearcoat={0.06} envMapIntensity={0.5} />
+      </RoundedBox>
       {selected && (
         <mesh>
           <boxGeometry args={[size.x * normalizedScale * 1.03, size.y * normalizedScale * 1.03, size.z * normalizedScale * 1.08]} />

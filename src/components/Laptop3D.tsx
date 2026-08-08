@@ -15,7 +15,7 @@ interface Props {
 
 const BODY_COLORS = {
   'space-black': '#24262a',
-  silver: '#c8cace',
+  silver: '#b5b8bd',
   white: '#e5e4e0',
   gold: '#cbb28d',
   blue: '#6f98b8',
@@ -24,7 +24,7 @@ const BODY_COLORS = {
 
 export default function Laptop3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/laptop-3d.glb', false, false)
-  const screenTexture = useScreenTexture(screenshot, screenshotType, { aspect: 16 / 9, flipY: false })
+  const screenTexture = useScreenTexture(screenshot, screenshotType, { aspect: 5.34 / 3.33 })
   const keyboardTexture = useTexture('/models/laptop-keyboard.png')
   keyboardTexture.colorSpace = THREE.SRGBColorSpace
   keyboardTexture.flipY = false
@@ -38,35 +38,33 @@ export default function Laptop3D({ device, transform, screenshot, screenshotType
       if (!(child instanceof THREE.Mesh)) return
       child.castShadow = true
       child.receiveShadow = true
+      child.frustumCulled = false
 
       const materials = Array.isArray(child.material) ? child.material : [child.material]
-      child.material = materials.map(sourceMaterial => {
+      const nextMaterials = materials.map(sourceMaterial => {
         let material: THREE.Material
         if (sourceMaterial.name === 'Material.004') {
-          material = new THREE.MeshBasicMaterial({
-            map: screenTexture,
-            toneMapped: false,
-            side: THREE.DoubleSide,
-            color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
-          })
+          material = new THREE.MeshBasicMaterial({ color: '#05060a', side: THREE.DoubleSide })
         } else if (sourceMaterial.name === 'Material') {
           material = new THREE.MeshStandardMaterial({ map: keyboardTexture, roughness: 0.58, side: THREE.DoubleSide })
         } else if (sourceMaterial.name === 'Material.001') {
           material = new THREE.MeshPhysicalMaterial({
             color: BODY_COLORS[device.color],
-            metalness: 0.86,
-            roughness: device.materialPreset === 'matte' ? 0.7 : 0.32,
-            clearcoat: 0.22,
+            metalness: 0.72,
+            roughness: device.materialPreset === 'matte' ? 0.7 : 0.42,
+            clearcoat: 0.08,
+            envMapIntensity: 0.5,
             side: THREE.DoubleSide,
           })
         } else if (sourceMaterial.name === 'Material.002') {
-          material = new THREE.MeshPhysicalMaterial({ color: '#08090a', roughness: 0.18, clearcoat: 0.45, side: THREE.DoubleSide })
+          material = new THREE.MeshPhysicalMaterial({ color: '#08090c', roughness: 0.26, clearcoat: 0.16, envMapIntensity: 0.42, side: THREE.DoubleSide })
         } else {
           material = sourceMaterial.clone()
         }
         ownedMaterials.push(material)
         return material
       })
+      child.material = Array.isArray(child.material) ? nextMaterials : nextMaterials[0]
     })
 
     next.updateMatrixWorld(true)
@@ -101,8 +99,19 @@ export default function Laptop3D({ device, transform, screenshot, screenshotType
       }}
     >
       <group scale={normalizedScale} position={[-center.x * normalizedScale, -center.y * normalizedScale, -center.z * normalizedScale]}>
-        <primitive object={model} />
+        <primitive object={model} dispose={null} />
       </group>
+
+      <mesh position={[0, 0.25, -1.81]}>
+        <planeGeometry args={[5.34, 3.33]} />
+        <meshBasicMaterial map={screenTexture} toneMapped={false} side={THREE.DoubleSide} color={new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness)} />
+      </mesh>
+      {device.showReflection && (
+        <mesh position={[0, 0.25, -1.795]}>
+          <planeGeometry args={[5.34, 3.33]} />
+          <meshPhysicalMaterial transparent opacity={0.035} color="#dcecff" roughness={0.08} depthWrite={false} />
+        </mesh>
+      )}
 
       {selected && (
         <mesh>

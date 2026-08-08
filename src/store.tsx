@@ -85,11 +85,11 @@ function offsetForNew(objects: SceneObject[]): Partial<Transform> {
   // every newly-added model occupy effectively the same point in space.
   const slots = [
     { posX: 0, posY: 0 },
-    { posX: -420, posY: -300 },
-    { posX: 0, posY: -300 },
-    { posX: 420, posY: -300 },
-    { posX: -210, posY: 300 },
-    { posX: 210, posY: 300 },
+    { posX: 320, posY: 0 },
+    { posX: -320, posY: 0 },
+    { posX: 0, posY: 280 },
+    { posX: 320, posY: 280 },
+    { posX: -320, posY: 280 },
   ]
   const slot = slots[n % slots.length]
   const page = Math.floor(n / slots.length)
@@ -135,7 +135,7 @@ function reducer(state: AppState, action: Action): AppState {
     case 'DUPLICATE_OBJECT': {
       const src = state.objects.find(o => o.id === action.payload.id)
       if (!src) return state
-      const copy: SceneObject = { ...src, id: genId(), name: src.name + ' Copy', transform: { ...src.transform, posX: src.transform.posX + 30, posY: src.transform.posY + 20 } }
+      const copy: SceneObject = { ...src, id: genId(), name: src.name + ' Copy', transform: { ...src.transform, posX: src.transform.posX + 160, posY: src.transform.posY + 90 } }
       const idx = state.objects.findIndex(o => o.id === action.payload.id)
       return { ...state, objects: [...state.objects.slice(0, idx + 1), copy, ...state.objects.slice(idx + 1)], selectedId: copy.id }
     }
