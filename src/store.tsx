@@ -1,5 +1,5 @@
 import { useContext, useReducer, useCallback, type ReactNode } from 'react'
-import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig } from './types'
+import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig, LayoutPattern } from './types'
 import { createSceneObject, createTextObject, createShapeObject, genId, defaultTransform, TEMPLATES } from './types'
 import { EditorContext, type EditorContextValue } from './context.tsx'
 
@@ -87,6 +87,7 @@ type Action =
   | { type: 'IMPORT_PROJECT'; payload: AppState }
   | { type: 'ALIGN_OBJECTS'; payload: { axis: 'horizontal' | 'vertical' } }
   | { type: 'DISTRIBUTE_OBJECTS'; payload: { axis: 'horizontal' | 'vertical' } }
+  | { type: 'APPLY_LAYOUT'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number } }
 
 function updateObj(objects: SceneObject[], id: string, up: (o: SceneObject) => SceneObject): SceneObject[] {
   return objects.map(o => (o.id === id ? up(o) : o))
@@ -217,6 +218,36 @@ function reducer(state: AppState, action: Action): AppState {
         return { ...state, objects: state.objects.map(o => map.has(o.id) ? { ...o, transform: { ...o.transform, posY: map.get(o.id)! } } : o) }
       }
     }
+    case 'APPLY_LAYOUT': {
+      const targets = state.objects.filter(o => o.visible && !o.locked && (o.elementType === 'device' || o.elementType == null))
+      if (targets.length < 2) return state
+      const ids = new Set(targets.map(o => o.id))
+      const middle = (targets.length - 1) / 2
+      const { pattern, spacing, depth, curve } = action.payload
+      const columns = Math.ceil(Math.sqrt(targets.length))
+      const rows = Math.ceil(targets.length / columns)
+      const transforms = new Map<string, Partial<Transform>>()
+
+      targets.forEach((object, index) => {
+        const offset = index - middle
+        let next: Partial<Transform> = { posX: offset * spacing, posY: 0, posZ: offset * depth, rotZ: 0 }
+        if (pattern === 'fan') {
+          next = { posX: offset * spacing * 0.72, posY: Math.abs(offset) * curve * 0.42, posZ: -Math.abs(offset) * depth, rotY: offset * curve * 0.16, rotZ: offset * curve * 0.08 }
+        } else if (pattern === 'arc') {
+          next = { posX: offset * spacing, posY: offset * offset * curve * 0.12, posZ: -Math.abs(offset) * depth, rotY: offset * curve * 0.12, rotZ: offset * curve * 0.06 }
+        } else if (pattern === 'staircase') {
+          next = { posX: offset * spacing, posY: -offset * curve, posZ: offset * depth, rotY: offset * curve * 0.08, rotZ: 0 }
+        } else if (pattern === 'grid') {
+          const row = Math.floor(index / columns), col = index % columns
+          next = { posX: (col - (columns - 1) / 2) * spacing, posY: (row - (rows - 1) / 2) * spacing * 0.8, posZ: row * depth, rotY: 0, rotZ: 0 }
+        } else if (pattern === 'rainbow') {
+          const angle = targets.length === 1 ? 0 : (index / (targets.length - 1) - 0.5) * Math.PI * 0.9
+          next = { posX: Math.sin(angle) * spacing * Math.max(1.5, targets.length * 0.42), posY: (1 - Math.cos(angle)) * curve * 1.5, posZ: -Math.abs(offset) * depth, rotY: angle * 32, rotZ: angle * 18 }
+        }
+        transforms.set(object.id, next)
+      })
+      return { ...state, objects: state.objects.map(o => ids.has(o.id) ? { ...o, transform: { ...o.transform, ...transforms.get(o.id)! } } : o) }
+    }
     default:
       return state
   }
@@ -281,9 +312,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const importProject = useCallback((s: AppState) => dispatch({ type: 'IMPORT_PROJECT', payload: s }), [])
   const alignObjects = useCallback((axis: 'horizontal' | 'vertical') => dispatch({ type: 'ALIGN_OBJECTS', payload: { axis } }), [])
   const distributeObjects = useCallback((axis: 'horizontal' | 'vertical') => dispatch({ type: 'DISTRIBUTE_OBJECTS', payload: { axis } }), [])
+  const applyLayout = useCallback((pattern: LayoutPattern, spacing: number, depth: number, curve: number) => dispatch({ type: 'APPLY_LAYOUT', payload: { pattern, spacing, depth, curve } }), [])
 
   return (
-    <EditorContext.Provider value={{ state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, duplicateObject, updateObject, updateDevice, updateTransform, updateText, updateShape, reorderObjects, setBackground, setLighting, setTool, toggleExportModal, toggleTemplatesModal, loadTemplate, importProject, alignObjects, distributeObjects }}>
+    <EditorContext.Provider value={{ state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, duplicateObject, updateObject, updateDevice, updateTransform, updateText, updateShape, reorderObjects, setBackground, setLighting, setTool, toggleExportModal, toggleTemplatesModal, loadTemplate, importProject, alignObjects, distributeObjects, applyLayout }}>
       {children}
     </EditorContext.Provider>
   )

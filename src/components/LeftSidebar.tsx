@@ -1,6 +1,6 @@
 import { useState, useRef, type ChangeEvent, type KeyboardEvent } from 'react'
 import { useEditor } from '../store'
-import type { DeviceType, AnglePreset, SceneObject, ShapeType } from '../types'
+import type { DeviceType, AnglePreset, SceneObject, ShapeType, LayoutPattern, DeviceColor } from '../types'
 import { ANGLE_PRESETS } from '../types'
 
 const DEVICE_TYPES: { type: DeviceType; label: string }[] = [
@@ -30,6 +30,16 @@ const ANGLE_LABELS: Record<AnglePreset, string> = {
   'top-down': 'Top Down', 'iso-left': 'Iso Left', 'iso-right': 'Iso Right',
   'dramatic-low': 'Low Angle', 'floating-quarter': 'Float ¾',
 }
+
+const LAYOUTS: { id: LayoutPattern; label: string; glyph: string }[] = [
+  { id: 'line', label: 'Line', glyph: '— — —' },
+  { id: 'fan', label: 'Fan', glyph: '\\ | /' },
+  { id: 'arc', label: 'Arc', glyph: '⌒' },
+  { id: 'staircase', label: 'Steps', glyph: '▁▃▅' },
+  { id: 'grid', label: 'Grid', glyph: '▦' },
+  { id: 'rainbow', label: 'Orbit', glyph: '◜ ◝' },
+]
+const RAINBOW_COLORS: DeviceColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink']
 
 const ET_ICONS: Record<string, React.ReactNode> = {
   device: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="5" y="2" width="14" height="20" rx="3" /></svg>,
@@ -120,8 +130,13 @@ function ObjectRow({ obj, selected, index, total, onSelect, onRename, onToggleVi
 }
 
 export default function LeftSidebar() {
-  const { state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, updateObject, updateTransform, reorderObjects } = useEditor()
+  const { state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, updateObject, updateDevice, updateTransform, reorderObjects, applyLayout } = useEditor()
   const mediaRef = useRef<HTMLInputElement>(null)
+  const [layout, setLayout] = useState<LayoutPattern>('fan')
+  const [layoutSpacing, setLayoutSpacing] = useState(210)
+  const [layoutDepth, setLayoutDepth] = useState(28)
+  const [layoutCurve, setLayoutCurve] = useState(24)
+  const [rainbowColors, setRainbowColors] = useState(true)
   const { objects, selectedId } = state
 
   const validObjects = objects.filter(o => o?.id && o?.transform && typeof o.transform.rotX === 'number')
@@ -175,6 +190,12 @@ export default function LeftSidebar() {
 
   const sel = selectedObject
   const selIsDevice = sel?.elementType === 'device' || sel?.elementType == null
+  const layoutTargets = validObjects.filter(o => o.visible && !o.locked && (o.elementType === 'device' || o.elementType == null))
+
+  const applyCurrentLayout = () => {
+    applyLayout(layout, layoutSpacing, layoutDepth, layoutCurve)
+    if (rainbowColors) layoutTargets.forEach((o, index) => updateDevice(o.id, { color: RAINBOW_COLORS[index % RAINBOW_COLORS.length] }))
+  }
 
   return (
     <div style={{ width: 220, flexShrink: 0, background: 'var(--panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
@@ -204,6 +225,38 @@ export default function LeftSidebar() {
             ))}
           </div>
         )}
+      </div>
+
+      <Sep />
+
+      {/* Non-destructive layout patterns */}
+      <SectionLabel>Pattern Layout</SectionLabel>
+      <div style={{ padding: '0 10px 10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
+          {LAYOUTS.map(item => (
+            <button key={item.id} onClick={() => setLayout(item.id)} style={{ padding: '7px 3px 6px', borderRadius: 6, border: `1px solid ${layout === item.id ? 'var(--accent)' : 'var(--border)'}`, background: layout === item.id ? 'var(--accent-glow)' : 'var(--surface)', color: layout === item.id ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--font-mono)' }}>
+              <span style={{ display: 'block', height: 13, fontSize: 11 }}>{item.glyph}</span>{item.label}
+            </button>
+          ))}
+        </div>
+        {[
+          ['Spacing', layoutSpacing, setLayoutSpacing, 80, 420],
+          ['Depth', layoutDepth, setLayoutDepth, 0, 160],
+          ['Curve', layoutCurve, setLayoutCurve, 0, 80],
+        ].map(([label, value, setter, min, max]) => (
+          <label key={label as string} style={{ display: 'grid', gridTemplateColumns: '48px 1fr 30px', alignItems: 'center', gap: 5, marginTop: 7, fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+            <span>{label as string}</span>
+            <input type="range" min={min as number} max={max as number} value={value as number} onChange={e => (setter as (n: number) => void)(Number(e.target.value))} style={{ width: '100%' }} />
+            <span style={{ textAlign: 'right', color: 'var(--text-muted)' }}>{value as number}</span>
+          </label>
+        ))}
+        <label style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 9, fontSize: 10, color: 'var(--text-muted)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={rainbowColors} onChange={e => setRainbowColors(e.target.checked)} /> Rainbow device colors
+        </label>
+        <button onClick={applyCurrentLayout} disabled={layoutTargets.length < 2} style={{ width: '100%', marginTop: 9, padding: '7px 8px', borderRadius: 6, border: 'none', background: layoutTargets.length >= 2 ? 'var(--accent)' : 'var(--surface-2)', color: layoutTargets.length >= 2 ? '#fff' : 'var(--text-dim)', cursor: layoutTargets.length >= 2 ? 'pointer' : 'default', fontSize: 10, fontWeight: 600 }}>
+          Arrange {layoutTargets.length} devices
+        </button>
+        <div style={{ marginTop: 6, fontSize: 9, lineHeight: 1.35, color: 'var(--text-dim)' }}>Uses visible, unlocked devices. Screens and materials stay intact.</div>
       </div>
 
       <Sep />

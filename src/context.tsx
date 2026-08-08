@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig } from './types'
+import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig, LayoutPattern } from './types'
 
 export interface EditorContextValue {
   state: AppState
@@ -25,6 +25,7 @@ export interface EditorContextValue {
   importProject: (state: AppState) => void
   alignObjects: (axis: 'horizontal' | 'vertical') => void
   distributeObjects: (axis: 'horizontal' | 'vertical') => void
+  applyLayout: (pattern: LayoutPattern, spacing: number, depth: number, curve: number) => void
 }
 
 export const EditorContext = createContext<EditorContextValue | null>(null)

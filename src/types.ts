@@ -19,6 +19,8 @@ export type AnglePreset =
   | 'front' | 'slight-left' | 'slight-right' | 'top-down'
   | 'iso-left' | 'iso-right' | 'dramatic-low' | 'floating-quarter'
 
+export type LayoutPattern = 'line' | 'fan' | 'arc' | 'staircase' | 'grid' | 'rainbow'
+
 // ── Sub-configs ───────────────────────────────────────────────────────────────
 
 export interface Transform {
