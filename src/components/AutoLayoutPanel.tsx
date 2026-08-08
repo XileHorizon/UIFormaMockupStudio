@@ -22,7 +22,7 @@ function ModifierEditor({ modifier }: { modifier: LayoutModifier }) {
         <label style={{ fontSize: 9, color: 'var(--text-dim)' }}>Orientation<select style={fieldStyle} value={settings.orientation} onChange={event => setSettings({ ...settings, orientation: event.target.value as 'follow' | 'preserve' })}><option value="follow">Rotate with path</option><option value="preserve">Keep original</option></select></label>
       </div>
       <Slider label="Count" value={settings.count} min={1} max={128} onChange={count => setSettings({ ...settings, count })} />
-      <Slider label="Angle" value={settings.angle} min={-1440} max={1440} onChange={angle => setSettings({ ...settings, angle })} />
+      <Slider label="Angle" value={settings.angle} min={-360} max={360} onChange={angle => setSettings({ ...settings, angle })} />
       <Slider label="Start" value={settings.startAngle} min={-1440} max={1440} onChange={startAngle => setSettings({ ...settings, startAngle })} />
       <Slider label="Radius +" value={settings.radiusOffset} min={-500} max={1000} onChange={radiusOffset => setSettings({ ...settings, radiusOffset })} />
       <div style={{ display: 'flex', gap: 5, marginTop: 7 }}><button style={buttonStyle} onClick={() => setSettings({ ...settings, direction: settings.direction === 1 ? -1 : 1 })}>{settings.direction === 1 ? '↻ Clockwise' : '↺ Counterclockwise'}</button><button style={{ ...buttonStyle, color: '#ef7777', marginLeft: 'auto' }} onClick={() => removeLayoutModifier(modifier.id)}>Remove</button></div>

@@ -23,6 +23,11 @@ function axisVector(axis: PatternAxis) {
 
 function radialTransforms(input: Transform, settings: RadialLayoutSettings): Transform[] {
   const count = Math.max(1, Math.min(256, Math.round(settings.count)))
+  // A constant-radius pattern cannot represent spans beyond one revolution
+  // without later instances lapping earlier ones and appearing to swap order.
+  // Start angle remains unrestricted so the whole pattern can still rotate
+  // through multiple revolutions without changing instance identity.
+  const angle = THREE.MathUtils.clamp(settings.angle, -360, 360)
   const pivot = new THREE.Vector3(settings.pivot.x, settings.pivot.y, settings.pivot.z)
   const relative = position(input).sub(pivot)
   const radial = relative.clone().sub(axisVector(settings.axis).multiplyScalar(relative.dot(axisVector(settings.axis))))
@@ -30,12 +35,12 @@ function radialTransforms(input: Transform, settings: RadialLayoutSettings): Tra
   // A closed revolution must not include the endpoint twice. Use a smooth
   // blend near complete revolutions so stepping 359 <-> 360 cannot make the
   // last instance jump between opposite ends of the pattern.
-  const revolutions = Math.max(1, Math.round(Math.abs(settings.angle) / 360))
+  const revolutions = Math.max(1, Math.round(Math.abs(angle) / 360))
   const closedAngle = revolutions * 360
-  const closeness = Math.max(0, 1 - Math.abs(Math.abs(settings.angle) - closedAngle) / 10)
+  const closeness = Math.max(0, 1 - Math.abs(Math.abs(angle) - closedAngle) / 10)
   const divisor = Math.max(1, (count - 1) + closeness)
   return Array.from({ length: count }, (_, index) => {
-    const degrees = settings.startAngle + settings.direction * settings.angle * index / divisor
+    const degrees = settings.startAngle + settings.direction * angle * index / divisor
     const q = new THREE.Quaternion().setFromAxisAngle(axisVector(settings.axis), THREE.MathUtils.degToRad(degrees))
     const p = relative.clone().applyQuaternion(q).add(pivot)
     const r = settings.orientation === 'follow' ? q.multiply(rotation(input)) : rotation(input)
