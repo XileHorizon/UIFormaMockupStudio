@@ -302,14 +302,12 @@ function reducer(state: AppState, action: Action): AppState {
           followAngle = side * Math.min(90, curve)
           next = { posX: mirrorAxis === 'x' ? side * tier * spacing : 0, posY: mirrorAxis === 'y' ? side * tier * spacing : Math.floor(index / 2) * curve, posZ: mirrorAxis === 'z' ? side * tier * spacing : -Math.floor(index / 2) * depth }
         } else if (pattern === 'ring') {
-          // A true radial array: member zero is the 0° master and every other
-          // member advances by exactly 360/N around a shared central axis.
-          // Spacing represents the straight-line distance between neighbors.
-          const step = (Math.PI * 2) / targets.length
-          const angle = index * step
-          const radius = spacing / (2 * Math.sin(Math.PI / targets.length))
+          // A kaleidoscopic radial array: every member shares the parent's
+          // exact pivot and position. Only its local rotation advances by
+          // 360/N (0, 60, 120... for six members). This intentionally differs
+          // from Orbit, which distributes objects spatially around a curve.
           followAngle = index * (360 / targets.length)
-          next = { posX: Math.cos(angle) * radius, posY: Math.sin(angle) * radius, posZ: 0 }
+          next = { posX: 0, posY: 0, posZ: 0 }
         }
         if (pattern !== 'mirror') {
           const u = next.posX ?? 0, v = next.posY ?? 0, w = next.posZ ?? 0
