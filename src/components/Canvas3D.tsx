@@ -1,4 +1,4 @@
-import { Suspense, useRef, useCallback, useEffect, type MutableRefObject, type PointerEvent } from 'react'
+import { Suspense, useRef, useCallback, useEffect, useState, type MutableRefObject, type PointerEvent } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -97,6 +97,19 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
   const dragRef = useRef<DragState>({ startX: 0, startY: 0, startRotX: 0, startRotY: 0, objectId: null, active: false })
   const containerRef = useRef<HTMLDivElement>(null)
   const cameraManuallyAdjusted = useRef(false)
+  const [renderQuality, setRenderQuality] = useState({ dpr: 2, shadowMapSize: 2048 })
+
+  useEffect(() => {
+    const updateQuality = (event: Event) => {
+      const detail = (event as CustomEvent<{ dpr?: number; shadowMapSize?: number }>).detail
+      setRenderQuality({
+        dpr: Math.max(1, Math.min(4, detail?.dpr ?? 2)),
+        shadowMapSize: [1024, 2048, 4096].includes(detail?.shadowMapSize ?? 2048) ? detail.shadowMapSize! : 2048,
+      })
+    }
+    window.addEventListener('mockframe-render-quality', updateQuality)
+    return () => window.removeEventListener('mockframe-render-quality', updateQuality)
+  }, [])
 
   const onCanvasPointerDown = useCallback((e: PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return
@@ -164,7 +177,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
         <div style={{ position: 'absolute', inset: 0 }}>
           <Canvas
             shadows
-            dpr={[1, 2]}
+            dpr={renderQuality.dpr}
             gl={{
               antialias: true,
               alpha: true,
@@ -183,7 +196,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
               intensity={0.88 * lighting.intensity}
               color="#fff8ef"
               castShadow
-              shadow-mapSize={[2048, 2048]}
+              shadow-mapSize={[renderQuality.shadowMapSize, renderQuality.shadowMapSize]}
               shadow-bias={-0.00015}
               shadow-normalBias={0.025}
             />

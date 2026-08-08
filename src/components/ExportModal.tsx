@@ -8,12 +8,15 @@ interface Props {
 }
 
 type Format = 'png' | 'jpeg' | 'webp'
-type Scale = 1 | 2 | 3 | 4
-
 export default function ExportModal({ canvasRef, onClose }: Props) {
   const { state, selectObject } = useEditor()
   const [format, setFormat] = useState<Format>('png')
-  const [scale, setScale] = useState<Scale>(2)
+  const [scale, setScale] = useState(2)
+  const [gpuDpr, setGpuDpr] = useState(2)
+  const [shadowLevel, setShadowLevel] = useState(2)
+  const [quality, setQuality] = useState(95)
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const [done, setDone] = useState(false)
 
@@ -22,11 +25,12 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
     const previousClassName = canvasRef.current?.className ?? ''
     const previousBackground = canvasRef.current?.style.background ?? ''
     selectObject(null)
+    window.dispatchEvent(new CustomEvent('mockframe-render-quality', { detail: { dpr: gpuDpr, shadowMapSize: 2 ** (shadowLevel + 9) } }))
     if (state.background.type === 'transparent' && canvasRef.current) {
       canvasRef.current.classList.remove('checkerboard')
       canvasRef.current.style.background = 'transparent'
     }
-    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
     try {
       return await capture()
     } finally {
@@ -35,6 +39,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
         canvasRef.current.style.background = previousBackground
       }
       selectObject(previousSelection)
+      window.dispatchEvent(new CustomEvent('mockframe-render-quality', { detail: { dpr: 2, shadowMapSize: 2048 } }))
     }
   }
 
@@ -45,7 +50,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
       canvas.width = image.naturalWidth
       canvas.height = image.naturalHeight
       canvas.getContext('2d')?.drawImage(image, 0, 0)
-      resolve(canvas.toDataURL('image/webp', 0.95))
+      resolve(canvas.toDataURL('image/webp', quality / 100))
     }
     image.onerror = () => reject(new Error('Could not convert the captured image to WebP.'))
     image.src = pngUrl
@@ -54,6 +59,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
   const handleExport = async () => {
     if (!canvasRef.current) return
     setExporting(true)
+    setError(null)
     try {
       const options = {
         pixelRatio: scale,
@@ -63,7 +69,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
 
       let dataUrl: string
       if (format === 'jpeg') {
-        dataUrl = await withoutSelection(() => toJpeg(canvasRef.current!, { ...options, quality: 0.95, backgroundColor: '#ffffff' }))
+        dataUrl = await withoutSelection(() => toJpeg(canvasRef.current!, { ...options, quality: quality / 100, backgroundColor: '#ffffff' }))
       } else if (format === 'webp') {
         const pngUrl = await withoutSelection(() => toPng(canvasRef.current!, options))
         dataUrl = await pngToWebp(pngUrl)
@@ -79,6 +85,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
       setTimeout(() => setDone(false), 2000)
     } catch (err) {
       console.error('Export failed:', err)
+      setError(err instanceof Error ? err.message : 'Export failed. Try lowering output scale or GPU quality.')
     } finally {
       setExporting(false)
     }
@@ -109,12 +116,9 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
     { id: 'webp', label: 'WebP' },
   ]
 
-  const scales: { id: Scale; label: string }[] = [
-    { id: 1, label: '1×' },
-    { id: 2, label: '2×' },
-    { id: 3, label: '3×' },
-    { id: 4, label: '4×' },
-  ]
+  const outputWidth = Math.round((canvasRef.current?.clientWidth ?? 0) * scale)
+  const outputHeight = Math.round((canvasRef.current?.clientHeight ?? 0) * scale)
+  const estimatedMegapixels = (outputWidth * outputHeight / 1_000_000).toFixed(1)
 
   return (
     <div
@@ -135,7 +139,8 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
           background: 'var(--panel)',
           border: '1px solid var(--border)',
           borderRadius: 12,
-          width: 360,
+          width: 440,
+          maxHeight: '88vh',
           overflow: 'hidden',
         }}
       >
@@ -153,7 +158,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
         </div>
 
         {/* Body */}
-        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', maxHeight: 'calc(88vh - 120px)' }}>
           {/* Format */}
           <div>
             <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
@@ -189,35 +194,37 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
             )}
           </div>
 
-          {/* Scale */}
+          {/* Output scale */}
           <div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
-              Scale
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
+              <span>Output scale</span><span style={{ color: 'var(--accent)' }}>{scale.toFixed(1)}×</span>
             </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {scales.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => setScale(s.id)}
-                  style={{
-                    flex: 1,
-                    padding: '7px 0',
-                    borderRadius: 6,
-                    border: scale === s.id ? '1px solid var(--accent)' : '1px solid var(--border)',
-                    background: scale === s.id ? 'var(--accent-glow)' : 'var(--surface)',
-                    color: scale === s.id ? 'var(--accent)' : 'var(--text-muted)',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    fontFamily: 'var(--font-mono)',
-                    transition: 'all 0.1s',
-                  }}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
+            <input type="range" min={1} max={8} step={0.5} value={scale} onChange={event => setScale(Number(event.target.value))} style={{ width: '100%' }} />
+            <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 5, fontFamily: 'var(--font-mono)' }}>{outputWidth} × {outputHeight} · {estimatedMegapixels} MP</div>
           </div>
+
+          <button onClick={() => setShowAdvanced(value => !value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, textAlign: 'left' }}>
+            {showAdvanced ? '▾' : '▸'} Advanced GPU rendering
+          </button>
+
+          {showAdvanced && <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: 12, borderRadius: 8, border: '1px solid var(--border-subtle)', background: 'var(--surface)' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>GPU supersampling</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{gpuDpr.toFixed(1)}×</span></div>
+              <input type="range" min={1} max={4} step={0.5} value={gpuDpr} onChange={event => setGpuDpr(Number(event.target.value))} style={{ width: '100%' }} />
+              <div style={{ fontSize: 9, color: 'var(--text-dim)', lineHeight: 1.4 }}>Raises the actual Three.js render resolution before capture. 4× can use substantial GPU memory.</div>
+            </div>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Shadow resolution</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{2 ** (shadowLevel + 9)}px</span></div>
+              <input type="range" min={1} max={3} step={1} value={shadowLevel} onChange={event => setShadowLevel(Number(event.target.value))} style={{ width: '100%' }} />
+            </div>
+            {format !== 'png' && <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Compression quality</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{quality}%</span></div>
+              <input type="range" min={50} max={100} step={1} value={quality} onChange={event => setQuality(Number(event.target.value))} style={{ width: '100%' }} />
+            </div>}
+            <button onClick={() => { setScale(4); setGpuDpr(4); setShadowLevel(3); setQuality(100) }} style={{ padding: '7px 9px', borderRadius: 5, border: '1px solid var(--accent)', background: 'var(--accent-glow)', color: 'var(--accent)', cursor: 'pointer', fontSize: 10, fontWeight: 600 }}>Max GPU preset</button>
+          </div>}
+
+          {error && <div role="alert" style={{ padding: '8px 10px', borderRadius: 6, background: 'rgba(255,70,70,.08)', border: '1px solid rgba(255,90,90,.3)', color: 'var(--danger)', fontSize: 10, lineHeight: 1.4 }}>{error}</div>}
 
           {/* Info row */}
           <div style={{ display: 'flex', gap: 10 }}>
