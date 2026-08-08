@@ -270,7 +270,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                 color="#11141a"
               />
             )}
-            <OrbitControls makeDefault enableZoom={false} enableDamping dampingFactor={0.08} minDistance={7} maxDistance={26} minPolarAngle={Math.PI * 0.28} maxPolarAngle={Math.PI * 0.72} onStart={() => { cameraManuallyAdjusted.current = true }} />
+            <OrbitControls makeDefault enableZoom enableDamping dampingFactor={0.08} minDistance={7} maxDistance={26} minPolarAngle={Math.PI * 0.28} maxPolarAngle={Math.PI * 0.72} onStart={() => { cameraManuallyAdjusted.current = true }} />
           </Canvas>
         </div>
 
