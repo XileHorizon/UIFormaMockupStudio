@@ -33,6 +33,7 @@ export default function Laptop3D({ device, transform, screenshot, screenshotType
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = scene.clone(true)
     const ownedMaterials: THREE.Material[] = []
+    const ownedGeometries: THREE.BufferGeometry[] = []
 
     next.traverse(child => {
       if (!(child instanceof THREE.Mesh)) return
@@ -41,10 +42,33 @@ export default function Laptop3D({ device, transform, screenshot, screenshotType
       child.frustumCulled = false
 
       const materials = Array.isArray(child.material) ? child.material : [child.material]
+      if (materials.some(material => material.name === 'Material.004')) {
+        const geometry = child.geometry.clone()
+        geometry.computeBoundingBox()
+        const bounds = geometry.boundingBox!
+        const width = bounds.max.x - bounds.min.x
+        const height = bounds.max.y - bounds.min.y
+        const positions = geometry.getAttribute('position')
+        const uvs = new Float32Array(positions.count * 2)
+
+        for (let index = 0; index < positions.count; index += 1) {
+          uvs[index * 2] = (positions.getX(index) - bounds.min.x) / width
+          uvs[index * 2 + 1] = (positions.getY(index) - bounds.min.y) / height
+        }
+
+        geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
+        child.geometry = geometry
+        ownedGeometries.push(geometry)
+      }
       const nextMaterials = materials.map(sourceMaterial => {
         let material: THREE.Material
         if (sourceMaterial.name === 'Material.004') {
-          material = new THREE.MeshBasicMaterial({ color: '#05060a', side: THREE.DoubleSide })
+          material = new THREE.MeshBasicMaterial({
+            map: screenTexture,
+            toneMapped: false,
+            side: THREE.DoubleSide,
+            color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
+          })
         } else if (sourceMaterial.name === 'Material') {
           material = new THREE.MeshStandardMaterial({ map: keyboardTexture, roughness: 0.58, side: THREE.DoubleSide })
         } else if (sourceMaterial.name === 'Material.001') {
@@ -72,6 +96,7 @@ export default function Laptop3D({ device, transform, screenshot, screenshotType
     const modelSize = box.getSize(new THREE.Vector3())
     const modelCenter = box.getCenter(new THREE.Vector3())
     next.userData.ownedMaterials = ownedMaterials
+    next.userData.ownedGeometries = ownedGeometries
     return {
       model: next,
       center: modelCenter,
@@ -82,6 +107,7 @@ export default function Laptop3D({ device, transform, screenshot, screenshotType
 
   useEffect(() => () => {
     for (const material of model.userData.ownedMaterials as THREE.Material[]) material.dispose()
+    for (const geometry of model.userData.ownedGeometries as THREE.BufferGeometry[]) geometry.dispose()
   }, [model])
 
   return (
@@ -101,17 +127,6 @@ export default function Laptop3D({ device, transform, screenshot, screenshotType
       <group scale={normalizedScale} position={[-center.x * normalizedScale, -center.y * normalizedScale, -center.z * normalizedScale]}>
         <primitive object={model} dispose={null} />
       </group>
-
-      <mesh position={[0, 0.25, -1.81]}>
-        <planeGeometry args={[5.34, 3.33]} />
-        <meshBasicMaterial map={screenTexture} toneMapped={false} side={THREE.DoubleSide} color={new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness)} />
-      </mesh>
-      {device.showReflection && (
-        <mesh position={[0, 0.25, -1.795]}>
-          <planeGeometry args={[5.34, 3.33]} />
-          <meshPhysicalMaterial transparent opacity={0.035} color="#dcecff" roughness={0.08} depthWrite={false} />
-        </mesh>
-      )}
 
       {selected && (
         <mesh>

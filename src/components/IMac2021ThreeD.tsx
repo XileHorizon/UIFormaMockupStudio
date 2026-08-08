@@ -40,7 +40,12 @@ export default function IMac2021ThreeD({ device, transform, screenshot, screensh
         const name = sourceMaterial.name.toLowerCase()
         let material: THREE.Material
         if (name.includes('imac_front')) {
-          material = new THREE.MeshBasicMaterial({ color: '#050609', side: THREE.DoubleSide })
+          material = new THREE.MeshBasicMaterial({
+            map: texture,
+            toneMapped: false,
+            side: THREE.DoubleSide,
+            color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
+          })
         } else if (name.includes('bezel') || name.includes('display_frame') || name.includes('webcam')) {
           material = new THREE.MeshPhysicalMaterial({ color: '#050609', roughness: 0.2, clearcoat: 0.2, side: THREE.DoubleSide, envMapIntensity: 0.45 })
         } else if (name.includes('glass')) {
@@ -79,16 +84,6 @@ export default function IMac2021ThreeD({ device, transform, screenshot, screensh
       <group scale={normalizedScale} position={[-center.x * normalizedScale, -center.y * normalizedScale, -center.z * normalizedScale]}>
         <primitive object={model} dispose={null} />
       </group>
-      <mesh position={[0, 0.638, 0.205]}>
-        <planeGeometry args={[5.86, 3.315]} />
-        <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} color={new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness)} />
-      </mesh>
-      {device.showReflection && (
-        <mesh position={[0, 0.638, 0.218]}>
-          <planeGeometry args={[5.86, 3.315]} />
-          <meshPhysicalMaterial transparent opacity={0.03} color="#dcecff" roughness={0.08} depthWrite={false} />
-        </mesh>
-      )}
       <RoundedBox args={[0.58, 1.45, 0.24]} radius={0.06} smoothness={4} position={[0, -1.78, -0.12]} castShadow>
         <meshPhysicalMaterial color={BODY_COLORS[device.color]} metalness={0.76} roughness={0.4} clearcoat={0.06} envMapIntensity={0.5} />
       </RoundedBox>

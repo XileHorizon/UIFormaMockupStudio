@@ -46,7 +46,27 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
       const name = normalizedName(child.name)
 
       if (name === 'screen') {
-        child.material = own(new THREE.MeshBasicMaterial({ color: '#050609', side: THREE.DoubleSide }))
+        const geometry = child.geometry.clone()
+        geometry.computeBoundingBox()
+        const bounds = geometry.boundingBox!
+        const width = bounds.max.x - bounds.min.x
+        const height = bounds.max.y - bounds.min.y
+        const positions = geometry.getAttribute('position')
+        const uvs = new Float32Array(positions.count * 2)
+
+        for (let index = 0; index < positions.count; index += 1) {
+          uvs[index * 2] = (positions.getX(index) - bounds.min.x) / width
+          uvs[index * 2 + 1] = (positions.getY(index) - bounds.min.y) / height
+        }
+
+        geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
+        child.geometry = geometry
+        child.material = own(new THREE.MeshBasicMaterial({
+          map: texture,
+          toneMapped: false,
+          side: THREE.DoubleSide,
+          color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
+        }))
       } else if (name.includes('keyboardkeys')) {
         child.material = own(new THREE.MeshPhysicalMaterial({ color: '#111317', metalness: 0.03, roughness: 0.52, clearcoat: 0.08, envMapIntensity: 0.45 }))
       } else if (name.includes('keyboardbase')) {
@@ -72,10 +92,13 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
 
     next.userData.ownedMaterials = ownedMaterials
     return next
-  }, [bodyColor, bodyRoughness, scene])
+  }, [bodyColor, bodyRoughness, device.screenBrightness, scene, texture])
 
   useEffect(() => () => {
     for (const material of model.userData.ownedMaterials as THREE.Material[]) material.dispose()
+    model.traverse(child => {
+      if (child instanceof THREE.Mesh && normalizedName(child.name) === 'screen') child.geometry.dispose()
+    })
   }, [model])
 
   return (
@@ -87,17 +110,6 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
     >
       <group scale={0.9}>
         <primitive object={model} dispose={null} scale={0.0202} />
-
-        <mesh position={[0, 2.42, -2.22]} rotation={[THREE.MathUtils.degToRad(-10), 0, 0]}>
-          <planeGeometry args={[5.72, 3.72]} />
-          <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} color={new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness)} />
-        </mesh>
-        {device.showReflection && (
-          <mesh position={[0, 2.423, -2.205]} rotation={[THREE.MathUtils.degToRad(-10), 0, 0]}>
-            <planeGeometry args={[5.72, 3.72]} />
-            <meshPhysicalMaterial transparent opacity={0.035} color="#dcecff" roughness={0.08} depthWrite={false} side={THREE.DoubleSide} />
-          </mesh>
-        )}
 
         {selected && (
           <mesh position={[0, 2.18, 0]}>
