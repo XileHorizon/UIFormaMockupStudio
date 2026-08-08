@@ -152,14 +152,34 @@ function PathTracingController() {
             child.visible
           ) {
             boostedLights.push({ light: child, intensity: child.intensity })
-            child.intensity *= 4
+            child.intensity *= 6
           }
         })
-        scene.environmentIntensity = Math.max(0.7, (originalEnvironmentIntensity ?? 1) * 2.5)
+
+        // Use a dedicated three-point softbox rig for the physically based
+        // export. The interactive rig uses intentionally small artistic
+        // intensities and directional lights, which are adequate in the
+        // raster renderer but leave metal/glass materials almost black in the
+        // path tracer (most noticeably when radial instances face away from
+        // the key). These temporary area lights are copied by setScene and
+        // removed immediately, so they never alter the editor preview.
+        const pathTraceRig = new THREE.Group()
+        const addSoftbox = (position: THREE.Vector3, intensity: number, color: THREE.ColorRepresentation, width: number, height: number) => {
+          const light = new THREE.RectAreaLight(color, intensity, width, height)
+          light.position.copy(position)
+          light.lookAt(0, 0, 0)
+          pathTraceRig.add(light)
+        }
+        addSoftbox(new THREE.Vector3(-7, 8, 10), 18, '#fff1df', 8, 8)
+        addSoftbox(new THREE.Vector3(8, 3, 7), 10, '#c5d8ff', 7, 7)
+        addSoftbox(new THREE.Vector3(0, 7, -8), 12, '#d6e4ff', 6, 6)
+        scene.add(pathTraceRig)
+        scene.environmentIntensity = Math.max(1.25, (originalEnvironmentIntensity ?? 1) * 4)
         scene.updateMatrixWorld(true)
         try {
           tracer.setScene(scene, camera)
         } finally {
+          scene.remove(pathTraceRig)
           scene.environmentIntensity = originalEnvironmentIntensity
           boostedLights.forEach(({ light, intensity }) => { light.intensity = intensity })
         }
