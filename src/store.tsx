@@ -325,7 +325,7 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, objects: state.objects.map(o => {
         if (!ids.has(o.id)) return o
         const calculated = transforms.get(o.id)!
-        if (!action.payload.asOffsets) return { ...o, patternTransform: undefined, transform: { ...o.transform, ...calculated } }
+        if (!action.payload.asOffsets) return { ...o, patternTransform: undefined, patternType: undefined, patternPlane: undefined, patternRotationAxis: undefined, transform: { ...o.transform, ...calculated } }
         const patternTransform: Partial<Transform> = {
           posX: calculated.posX ?? 0,
           posY: calculated.posY ?? 0,
@@ -334,7 +334,7 @@ function reducer(state: AppState, action: Action): AppState {
         ;(['rotX', 'rotY', 'rotZ'] as const).forEach(key => {
           if (typeof calculated[key] === 'number') patternTransform[key] = calculated[key]! - o.transform[key]
         })
-        return { ...o, patternTransform }
+        return { ...o, patternTransform, patternType: pattern, patternPlane: plane, patternRotationAxis: rotationAxis }
       }) }
     }
     case 'GENERATE_PATTERN': {
@@ -351,6 +351,9 @@ function reducer(state: AppState, action: Action): AppState {
         device: { ...source.device },
         transform: { ...source.transform },
         patternTransform: undefined,
+        patternType: undefined,
+        patternPlane: undefined,
+        patternRotationAxis: undefined,
         linkedGroupId: groupId,
         linkedIndex: linked ? index : undefined,
       }))

@@ -205,13 +205,23 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
   const renderObjects = objects.map(object => {
     const offset = object.patternTransform
     if (!offset) return object
+    // Pattern offsets live in the parent's local coordinate space. Rotate the
+    // position vector by the editable master rotation before translating it,
+    // just as a real nested Three.js group would behave.
+    const localPosition = new THREE.Vector3(offset.posX ?? 0, offset.posY ?? 0, offset.posZ ?? 0)
+    localPosition.applyEuler(new THREE.Euler(
+      THREE.MathUtils.degToRad(object.transform.rotX),
+      THREE.MathUtils.degToRad(object.transform.rotY),
+      THREE.MathUtils.degToRad(object.transform.rotZ),
+      'XYZ',
+    ))
     return {
       ...object,
       transform: {
         ...object.transform,
-        posX: object.transform.posX + (offset.posX ?? 0),
-        posY: object.transform.posY + (offset.posY ?? 0),
-        posZ: object.transform.posZ + (offset.posZ ?? 0),
+        posX: object.transform.posX + localPosition.x,
+        posY: object.transform.posY + localPosition.y,
+        posZ: object.transform.posZ + localPosition.z,
         rotX: object.transform.rotX + (offset.rotX ?? 0),
         rotY: object.transform.rotY + (offset.rotY ?? 0),
         rotZ: object.transform.rotZ + (offset.rotZ ?? 0),
@@ -424,12 +434,21 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
         {selectedId && state.activeTool !== 'select' && (() => {
           const selected = renderObjects.find(object => object.id === selectedId)
           if (!selected || selected.locked) return null
-          const offset = objects.find(object => object.id === selectedId)?.patternTransform
+          const selectedBase = objects.find(object => object.id === selectedId)
+          const offset = selectedBase?.patternTransform
+          const rotatedPositionOffset = new THREE.Vector3(offset?.posX ?? 0, offset?.posY ?? 0, offset?.posZ ?? 0)
+          if (selectedBase) rotatedPositionOffset.applyEuler(new THREE.Euler(
+            THREE.MathUtils.degToRad(selectedBase.transform.rotX),
+            THREE.MathUtils.degToRad(selectedBase.transform.rotY),
+            THREE.MathUtils.degToRad(selectedBase.transform.rotZ),
+            'XYZ',
+          ))
           return <TransformGizmo object={selected} tool={state.activeTool} onChange={changes => {
             const baseChanges = { ...changes }
-            ;(['posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ'] as const).forEach(key => {
-              if (typeof baseChanges[key] === 'number') baseChanges[key] = baseChanges[key]! - (offset?.[key] ?? 0)
-            })
+            if (typeof baseChanges.posX === 'number') baseChanges.posX -= rotatedPositionOffset.x
+            if (typeof baseChanges.posY === 'number') baseChanges.posY -= rotatedPositionOffset.y
+            if (typeof baseChanges.posZ === 'number') baseChanges.posZ -= rotatedPositionOffset.z
+            ;(['rotX', 'rotY', 'rotZ'] as const).forEach(key => { if (typeof baseChanges[key] === 'number') baseChanges[key] -= offset?.[key] ?? 0 })
             updateTransform(selected.id, baseChanges)
           }} />
         })()}

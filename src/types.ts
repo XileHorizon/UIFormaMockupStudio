@@ -118,6 +118,9 @@ export interface SceneObject {
   linkedIndex?: number
   /** Derived local offset supplied by a parametric pattern. */
   patternTransform?: Partial<Transform>
+  patternType?: LayoutPattern
+  patternPlane?: PatternPlane
+  patternRotationAxis?: RotationFollowAxis
 }
 
 export interface AppState {
