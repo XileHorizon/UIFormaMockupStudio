@@ -1,5 +1,5 @@
 import { Suspense, useRef, useCallback, useEffect, type PointerEvent } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { useEditor } from '../store'
@@ -29,6 +29,22 @@ function getCanvasBackground(bg: { type: string; color: string; gradientFrom: st
 interface DragState {
   startX: number; startY: number; startRotX: number; startRotY: number
   objectId: string | null; active: boolean
+}
+
+function SceneCamera({ visibleObjectCount }: { visibleObjectCount: number }) {
+  const { camera } = useThree()
+
+  useEffect(() => {
+    // The editor's sidebars leave a narrow viewport. Pull the camera back as a
+    // composition grows so the placement grid remains visible in both the
+    // editor and exported image instead of being clipped like a one-device shot.
+    const distance = visibleObjectCount <= 1 ? 11.5 : visibleObjectCount === 2 ? 15 : 21
+    camera.position.set(0, 0.1, distance)
+    camera.lookAt(0, 0, 0)
+    camera.updateProjectionMatrix()
+  }, [camera, visibleObjectCount])
+
+  return null
 }
 
 export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTMLDivElement | null> }) {
@@ -126,6 +142,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             camera={{ position: [0, 0.1, 11.5], fov: 38, near: 0.1, far: 100 }}
             onPointerMissed={() => selectObject(null)}
           >
+            <SceneCamera visibleObjectCount={objects.filter(object => object.visible).length} />
             <ambientLight intensity={0.06 * lighting.ambientIntensity} />
             <directionalLight
               position={[-5, 8, 7]}
