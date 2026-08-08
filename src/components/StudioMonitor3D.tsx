@@ -18,6 +18,8 @@ const BODY_COLORS = {
   silver: '#c8c9cb',
   white: '#e8e8e6',
   gold: '#d3b997',
+  blue: '#6f98b8',
+  orange: '#d97948',
 } as const
 
 export function useScreenTexture(source: string | null, type: ScreenContentType) {

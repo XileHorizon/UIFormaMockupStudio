@@ -86,6 +86,10 @@ function offsetForNew(objects: SceneObject[]): Partial<Transform> {
 const DEVICE_NAMES: Partial<Record<DeviceType, string>> = {
   'studio-display': 'Studio Display',
   'macbook-air': 'MacBook Air',
+  'iphone-17-pro': 'iPhone 17 Pro',
+  'ipad-pro': 'iPad Pro',
+  'laptop-3d': 'Laptop 3D',
+  'imac-2021': 'iMac 2021',
 }
 
 // ── Reducer ───────────────────────────────────────────────────────────────────

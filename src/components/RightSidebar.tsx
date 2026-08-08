@@ -86,6 +86,8 @@ const DEVICE_COLOR_OPTIONS: { id: DeviceColor; label: string; swatch: string }[]
   { id: 'silver', label: 'Silver', swatch: '#e8e8e8' },
   { id: 'white', label: 'White', swatch: '#f5f5f7' },
   { id: 'gold', label: 'Gold', swatch: '#f5e6c8' },
+  { id: 'blue', label: 'Blue', swatch: '#6f98b8' },
+  { id: 'orange', label: 'Orange', swatch: '#e58b5b' },
 ]
 
 const BG_OPTIONS: { type: BackgroundType; label: string }[] = [

@@ -1,8 +1,8 @@
 // ── Element types ─────────────────────────────────────────────────────────────
 
 export type ElementType = 'device' | 'text' | 'shape'
-export type DeviceType = 'phone' | 'laptop' | 'tablet' | 'monitor' | 'studio-display' | 'macbook-air' | 'browser'
-export type DeviceColor = 'space-black' | 'silver' | 'white' | 'gold'
+export type DeviceType = 'phone' | 'iphone-17-pro' | 'laptop' | 'laptop-3d' | 'tablet' | 'ipad-pro' | 'monitor' | 'studio-display' | 'imac-2021' | 'macbook-air' | 'browser'
+export type DeviceColor = 'space-black' | 'silver' | 'white' | 'gold' | 'blue' | 'orange'
 export type ShapeType = 'card' | 'ring' | 'blob' | 'pedestal' | 'plane'
 export type ScreenContentType = 'image' | 'video' | 'gif' | null
 
@@ -190,7 +190,7 @@ export function defaultTransform(overrides?: Partial<Transform>): Transform {
 export function defaultDevice(type: DeviceType = 'phone'): DeviceConfig {
   return {
     type,
-    color: 'space-black',
+    color: type === 'imac-2021' ? 'blue' : 'space-black',
     orientation: 'portrait',
     showShadow: true,
     showReflection: true,

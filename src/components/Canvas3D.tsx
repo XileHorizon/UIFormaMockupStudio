@@ -6,6 +6,10 @@ import { useEditor } from '../store'
 import DeviceMockup from './DeviceMockup'
 import StudioMonitor3D from './StudioMonitor3D'
 import ClosedMacBook3D from './ClosedMacBook3D'
+import IPhone17Pro3D from './IPhone17Pro3D'
+import IPadPro3D from './IPadPro3D'
+import Laptop3D from './Laptop3D'
+import IMac2021ThreeD from './IMac2021ThreeD'
 import TextElement from './TextElement'
 import ShapeElement from './ShapeElement'
 import type { SceneObject } from '../types'
@@ -162,6 +166,46 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                   selected={obj.id === selectedId}
                   onSelect={() => selectObject(obj.id)}
                 />
+              ) : obj.visible && obj.elementType === 'device' && obj.device?.type === 'iphone-17-pro' ? (
+                <IPhone17Pro3D
+                  key={obj.id}
+                  device={obj.device}
+                  transform={obj.transform}
+                  screenshot={obj.screenshot}
+                  screenshotType={obj.screenshotType}
+                  selected={obj.id === selectedId}
+                  onSelect={() => selectObject(obj.id)}
+                />
+              ) : obj.visible && obj.elementType === 'device' && obj.device?.type === 'ipad-pro' ? (
+                <IPadPro3D
+                  key={obj.id}
+                  device={obj.device}
+                  transform={obj.transform}
+                  screenshot={obj.screenshot}
+                  screenshotType={obj.screenshotType}
+                  selected={obj.id === selectedId}
+                  onSelect={() => selectObject(obj.id)}
+                />
+              ) : obj.visible && obj.elementType === 'device' && obj.device?.type === 'laptop-3d' ? (
+                <Laptop3D
+                  key={obj.id}
+                  device={obj.device}
+                  transform={obj.transform}
+                  screenshot={obj.screenshot}
+                  screenshotType={obj.screenshotType}
+                  selected={obj.id === selectedId}
+                  onSelect={() => selectObject(obj.id)}
+                />
+              ) : obj.visible && obj.elementType === 'device' && obj.device?.type === 'imac-2021' ? (
+                <IMac2021ThreeD
+                  key={obj.id}
+                  device={obj.device}
+                  transform={obj.transform}
+                  screenshot={obj.screenshot}
+                  screenshotType={obj.screenshotType}
+                  selected={obj.id === selectedId}
+                  onSelect={() => selectObject(obj.id)}
+                />
               ) : null)}
             </Suspense>
 
@@ -184,7 +228,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             if (!obj.transform || typeof obj.transform.rotX !== 'number') return null
             const isSelected = obj.id === selectedId
             const et = obj.elementType ?? 'device'
-            if (et === 'device' && ['monitor', 'studio-display', 'macbook-air'].includes(obj.device?.type)) return null
+            if (et === 'device' && ['monitor', 'studio-display', 'macbook-air', 'iphone-17-pro', 'ipad-pro', 'laptop-3d', 'imac-2021'].includes(obj.device?.type)) return null
 
             return (
               <div

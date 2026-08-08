@@ -17,6 +17,8 @@ const BODY_COLORS = {
   silver: '#c9cacc',
   white: '#e1e2e3',
   gold: '#c9ad89',
+  blue: '#6f98b8',
+  orange: '#d97948',
 } as const
 
 function Keyboard({ isDark }: { isDark: boolean }) {

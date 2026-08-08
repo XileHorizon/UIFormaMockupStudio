@@ -6,6 +6,10 @@ import { ANGLE_PRESETS } from '../types'
 const DEVICE_TYPES: { type: DeviceType; label: string }[] = [
   { type: 'studio-display', label: 'Studio Display' },
   { type: 'macbook-air',    label: 'MacBook Air'    },
+  { type: 'iphone-17-pro',   label: 'iPhone 17 Pro'  },
+  { type: 'ipad-pro',        label: 'iPad Pro'        },
+  { type: 'laptop-3d',       label: 'Laptop 3D'       },
+  { type: 'imac-2021',       label: 'iMac 2021'       },
   { type: 'phone',          label: 'Phone'          },
   { type: 'laptop',         label: 'Laptop'         },
   { type: 'tablet',         label: 'Tablet'         },
