@@ -87,7 +87,7 @@ type Action =
   | { type: 'IMPORT_PROJECT'; payload: AppState }
   | { type: 'ALIGN_OBJECTS'; payload: { axis: 'horizontal' | 'vertical' } }
   | { type: 'DISTRIBUTE_OBJECTS'; payload: { axis: 'horizontal' | 'vertical' } }
-  | { type: 'APPLY_LAYOUT'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number; plane?: PatternPlane; mirrorAxis?: PatternAxis; rotationAxis?: RotationFollowAxis; targetIds?: string[] } }
+  | { type: 'APPLY_LAYOUT'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number; plane?: PatternPlane; mirrorAxis?: PatternAxis; rotationAxis?: RotationFollowAxis; targetIds?: string[]; asOffsets?: boolean } }
   | { type: 'GENERATE_PATTERN'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number; count: number; mode: CopyMode; plane: PatternPlane; mirrorAxis: PatternAxis; rotationAxis: RotationFollowAxis } }
 
 function updateObj(objects: SceneObject[], id: string, up: (o: SceneObject) => SceneObject): SceneObject[] {
@@ -322,7 +322,20 @@ function reducer(state: AppState, action: Action): AppState {
         }
         transforms.set(object.id, next)
       })
-      return { ...state, objects: state.objects.map(o => ids.has(o.id) ? { ...o, transform: { ...o.transform, ...transforms.get(o.id)! } } : o) }
+      return { ...state, objects: state.objects.map(o => {
+        if (!ids.has(o.id)) return o
+        const calculated = transforms.get(o.id)!
+        if (!action.payload.asOffsets) return { ...o, patternTransform: undefined, transform: { ...o.transform, ...calculated } }
+        const patternTransform: Partial<Transform> = {
+          posX: calculated.posX ?? 0,
+          posY: calculated.posY ?? 0,
+          posZ: calculated.posZ ?? 0,
+        }
+        ;(['rotX', 'rotY', 'rotZ'] as const).forEach(key => {
+          if (typeof calculated[key] === 'number') patternTransform[key] = calculated[key]! - o.transform[key]
+        })
+        return { ...o, patternTransform }
+      }) }
     }
     case 'GENERATE_PATTERN': {
       const source = state.objects.find(o => o.id === state.selectedId && (o.elementType === 'device' || o.elementType == null))
@@ -337,11 +350,12 @@ function reducer(state: AppState, action: Action): AppState {
         name: index === 0 ? source.name : `${source.name} ${index + 1}`,
         device: { ...source.device },
         transform: { ...source.transform },
+        patternTransform: undefined,
         linkedGroupId: groupId,
         linkedIndex: linked ? index : undefined,
       }))
       const temporary = { ...state, objects: [...retained.filter(o => o.id !== source.id), ...copies], selectedId: source.id }
-      return reducer(temporary, { type: 'APPLY_LAYOUT', payload: { ...action.payload, targetIds: copies.map(o => o.id) } })
+      return reducer(temporary, { type: 'APPLY_LAYOUT', payload: { ...action.payload, targetIds: copies.map(o => o.id), asOffsets: linked } })
     }
     default:
       return state

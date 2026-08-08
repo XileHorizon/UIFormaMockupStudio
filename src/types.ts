@@ -116,6 +116,8 @@ export interface SceneObject {
   /** Members of a generated pattern share device and screen edits. */
   linkedGroupId?: string
   linkedIndex?: number
+  /** Derived local offset supplied by a parametric pattern. */
+  patternTransform?: Partial<Transform>
 }
 
 export interface AppState {

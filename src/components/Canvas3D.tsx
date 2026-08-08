@@ -202,6 +202,22 @@ function PathTracingController() {
 export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTMLDivElement | null> }) {
   const { state, selectObject, updateTransform } = useEditor()
   const { objects, selectedId, background, lighting } = state
+  const renderObjects = objects.map(object => {
+    const offset = object.patternTransform
+    if (!offset) return object
+    return {
+      ...object,
+      transform: {
+        ...object.transform,
+        posX: object.transform.posX + (offset.posX ?? 0),
+        posY: object.transform.posY + (offset.posY ?? 0),
+        posZ: object.transform.posZ + (offset.posZ ?? 0),
+        rotX: object.transform.rotX + (offset.rotX ?? 0),
+        rotY: object.transform.rotY + (offset.rotY ?? 0),
+        rotZ: object.transform.rotZ + (offset.rotZ ?? 0),
+      },
+    }
+  })
 
   const dragRef = useRef<DragState>({ startX: 0, startY: 0, startRotX: 0, startRotY: 0, objectId: null, active: false })
   const containerRef = useRef<HTMLDivElement>(null)
@@ -306,7 +322,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             camera={{ position: [0, 0.1, 11.5], fov: 38, near: 0.1, far: 100 }}
             onPointerMissed={() => selectObject(null)}
           >
-            <SceneCamera visibleObjectCount={objects.filter(object => object.visible).length} manuallyAdjusted={cameraManuallyAdjusted} />
+            <SceneCamera visibleObjectCount={renderObjects.filter(object => object.visible).length} manuallyAdjusted={cameraManuallyAdjusted} />
             <PathTracingController />
             <ambientLight intensity={0.08 * lighting.ambientIntensity} />
             <directionalLight
@@ -327,7 +343,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                 environmentIntensity={lighting.environmentIntensity ?? 0.26}
                 environmentRotation={[0, THREE.MathUtils.degToRad(lighting.environmentRotation ?? -26), 0]}
               />
-              {objects.map(obj => obj.visible && obj.elementType === 'device' && (obj.device?.type === 'monitor' || obj.device?.type === 'studio-display') ? (
+              {renderObjects.map(obj => obj.visible && obj.elementType === 'device' && (obj.device?.type === 'monitor' || obj.device?.type === 'studio-display') ? (
                 <StudioMonitor3D
                   key={obj.id}
                   device={obj.device}
@@ -390,7 +406,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
               ) : null)}
             </Suspense>
 
-            {objects.some(object => object.visible && object.elementType === 'device' && object.device?.showShadow) && (
+            {renderObjects.some(object => object.visible && object.elementType === 'device' && object.device?.showShadow) && (
               <ContactShadows
                 position={[0, -2.6, 0]}
                 opacity={lighting.shadowOpacity}
@@ -406,13 +422,20 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
         </div>
 
         {selectedId && state.activeTool !== 'select' && (() => {
-          const selected = objects.find(object => object.id === selectedId)
+          const selected = renderObjects.find(object => object.id === selectedId)
           if (!selected || selected.locked) return null
-          return <TransformGizmo object={selected} tool={state.activeTool} onChange={changes => updateTransform(selected.id, changes)} />
+          const offset = objects.find(object => object.id === selectedId)?.patternTransform
+          return <TransformGizmo object={selected} tool={state.activeTool} onChange={changes => {
+            const baseChanges = { ...changes }
+            ;(['posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ'] as const).forEach(key => {
+              if (typeof baseChanges[key] === 'number') baseChanges[key] = baseChanges[key]! - (offset?.[key] ?? 0)
+            })
+            updateTransform(selected.id, baseChanges)
+          }} />
         })()}
 
         <div data-canvas-bg="true" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-          {objects.map(obj => {
+          {renderObjects.map(obj => {
             if (!obj.visible) return null
             if (!obj.transform || typeof obj.transform.rotX !== 'number') return null
             const isSelected = obj.id === selectedId
