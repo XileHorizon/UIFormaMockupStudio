@@ -38,7 +38,15 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
     if (rayTracing) {
       await new Promise<void>((resolve, reject) => {
-        const timeout = window.setTimeout(() => finish(new Error('Ray tracing timed out. Try fewer samples or a lower GPU setting.')), Math.max(120_000, raySamples * 4_000))
+        const isMac = /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)
+        // WebGL path tracing can run substantially slower on Apple GPUs,
+        // particularly at high DPR and 256–512 samples. Give Macs up to an
+        // hour and scale the floor with sample count instead of aborting an
+        // otherwise healthy render after only a few minutes.
+        const timeoutMs = isMac
+          ? Math.min(60 * 60_000, Math.max(30 * 60_000, raySamples * 15_000))
+          : Math.min(30 * 60_000, Math.max(10 * 60_000, raySamples * 8_000))
+        const timeout = window.setTimeout(() => finish(new Error('Ray tracing timed out. Try fewer samples or a lower GPU setting.')), timeoutMs)
         const onReady = () => finish()
         const onError = (event: Event) => finish(new Error((event as CustomEvent<{ message: string }>).detail?.message || 'Ray tracing failed for this scene.'))
         const onProgress = (event: Event) => {
