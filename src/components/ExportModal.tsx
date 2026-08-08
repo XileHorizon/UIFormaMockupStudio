@@ -19,14 +19,37 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
 
   const withoutSelection = async <T,>(capture: () => Promise<T>) => {
     const previousSelection = state.selectedId
+    const previousClassName = canvasRef.current?.className ?? ''
+    const previousBackground = canvasRef.current?.style.background ?? ''
     selectObject(null)
+    if (state.background.type === 'transparent' && canvasRef.current) {
+      canvasRef.current.classList.remove('checkerboard')
+      canvasRef.current.style.background = 'transparent'
+    }
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
     try {
       return await capture()
     } finally {
+      if (canvasRef.current) {
+        canvasRef.current.className = previousClassName
+        canvasRef.current.style.background = previousBackground
+      }
       selectObject(previousSelection)
     }
   }
+
+  const pngToWebp = (pngUrl: string) => new Promise<string>((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = image.naturalWidth
+      canvas.height = image.naturalHeight
+      canvas.getContext('2d')?.drawImage(image, 0, 0)
+      resolve(canvas.toDataURL('image/webp', 0.95))
+    }
+    image.onerror = () => reject(new Error('Could not convert the captured image to WebP.'))
+    image.src = pngUrl
+  })
 
   const handleExport = async () => {
     if (!canvasRef.current) return
@@ -41,6 +64,9 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
       let dataUrl: string
       if (format === 'jpeg') {
         dataUrl = await withoutSelection(() => toJpeg(canvasRef.current!, { ...options, quality: 0.95, backgroundColor: '#ffffff' }))
+      } else if (format === 'webp') {
+        const pngUrl = await withoutSelection(() => toPng(canvasRef.current!, options))
+        dataUrl = await pngToWebp(pngUrl)
       } else {
         dataUrl = await withoutSelection(() => toPng(canvasRef.current!, options))
       }
