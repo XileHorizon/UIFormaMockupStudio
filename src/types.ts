@@ -69,6 +69,10 @@ export interface Transform {
   posY: number
   posZ: number
   scale: number
+  /** Derived signed axes used by reflection modifiers; omitted for normal objects. */
+  scaleX?: number
+  scaleY?: number
+  scaleZ?: number
 }
 
 export interface Background {

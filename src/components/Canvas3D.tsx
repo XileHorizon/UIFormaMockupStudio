@@ -468,7 +468,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                 key={obj.id}
                 style={{
                   position: 'absolute', left: '50%', top: '50%',
-                  transform: `translate(-50%, -50%) translate(${obj.transform.posX}px, ${obj.transform.posY}px) scale(${obj.transform.scale})`,
+                  transform: `translate(-50%, -50%) translate(${obj.transform.posX}px, ${obj.transform.posY}px) scale3d(${obj.transform.scale * (obj.transform.scaleX ?? 1)}, ${obj.transform.scale * (obj.transform.scaleY ?? 1)}, ${obj.transform.scale * (obj.transform.scaleZ ?? 1)})`,
                   cursor: obj.locked ? 'not-allowed' : 'grab',
                   pointerEvents: 'auto',
                 }}

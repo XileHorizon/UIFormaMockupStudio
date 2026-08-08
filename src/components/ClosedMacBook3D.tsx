@@ -97,7 +97,7 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
     <group
       position={[transform.posX / 95, -transform.posY / 95 - 1.9, 0.7 + transform.posZ / 95]}
       rotation={[THREE.MathUtils.degToRad(transform.rotX), THREE.MathUtils.degToRad(transform.rotY), THREE.MathUtils.degToRad(transform.rotZ)]}
-      scale={transform.scale}
+      scale={[transform.scale * (transform.scaleX ?? 1), transform.scale * (transform.scaleY ?? 1), transform.scale * (transform.scaleZ ?? 1)]}
       onPointerDown={event => { event.stopPropagation(); onSelect() }}
     >
       <group scale={0.9}>

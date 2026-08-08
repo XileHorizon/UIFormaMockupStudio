@@ -177,7 +177,7 @@ export default function StudioMonitor3D({ device, transform, screenshot, screens
         THREE.MathUtils.degToRad(transform.rotY),
         THREE.MathUtils.degToRad(transform.rotZ),
       ]}
-      scale={transform.scale}
+      scale={[transform.scale * (transform.scaleX ?? 1), transform.scale * (transform.scaleY ?? 1), transform.scale * (transform.scaleZ ?? 1)]}
       onPointerDown={event => {
         event.stopPropagation()
         onSelect()
