@@ -2,6 +2,7 @@ import { Suspense, useRef, useCallback, useEffect, useState, type MutableRefObje
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
+import { evaluateScene } from '../layout-engine'
 import { useEditor } from '../store'
 import DeviceMockup from './DeviceMockup'
 import StudioMonitor3D from './StudioMonitor3D'
@@ -202,7 +203,8 @@ function PathTracingController() {
 export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTMLDivElement | null> }) {
   const { state, selectObject, updateTransform } = useEditor()
   const { objects, selectedId, background, lighting } = state
-  const renderObjects = objects.map(object => {
+  const selectedIds = state.selectedIds ?? (selectedId ? [selectedId] : [])
+  const renderObjects = evaluateScene(state).map(object => {
     const offset = object.patternTransform
     if (!offset) return object
     // Pattern offsets live in the parent's local coordinate space. Rotate the
@@ -457,7 +459,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
           {renderObjects.map(obj => {
             if (!obj.visible) return null
             if (!obj.transform || typeof obj.transform.rotX !== 'number') return null
-            const isSelected = obj.id === selectedId
+            const isSelected = selectedIds.includes(obj.id)
             const et = obj.elementType ?? 'device'
             if (et === 'device' && ['monitor', 'studio-display', 'macbook-air', 'iphone-17-pro', 'ipad-pro', 'laptop-3d', 'imac-2021'].includes(obj.device?.type)) return null
 
@@ -470,7 +472,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                   cursor: obj.locked ? 'not-allowed' : 'grab',
                   pointerEvents: 'auto',
                 }}
-                onPointerDown={e => startObjectDrag(e, obj)}
+                  onPointerDown={e => { if (obj.generated) { e.stopPropagation(); selectObject(obj.id, e.shiftKey); return } startObjectDrag(e, obj) }}
               >
                 {/* Selection ring */}
                 {isSelected && (
@@ -479,7 +481,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                 {/* Element type badge on selected */}
                 {isSelected && (
                   <div style={{ position: 'absolute', top: -28, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'var(--accent)', fontFamily: 'var(--font-mono)', background: 'rgba(0,0,0,0.7)', padding: '2px 7px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 11, border: '1px solid rgba(59,126,248,0.3)' }}>
-                    {obj.name}
+                    {obj.generated ? `◇ ${obj.name}` : obj.name}
                   </div>
                 )}
 

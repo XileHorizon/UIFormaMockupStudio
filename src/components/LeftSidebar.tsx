@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, type ChangeEvent, type KeyboardEvent } fro
 import { useEditor } from '../store'
 import type { DeviceType, AnglePreset, SceneObject, ShapeType, LayoutPattern, DeviceColor, PatternPlane, PatternAxis, RotationFollowAxis } from '../types'
 import { ANGLE_PRESETS } from '../types'
+import AutoLayoutPanel from './AutoLayoutPanel'
 
 const DEVICE_TYPES: { type: DeviceType; label: string }[] = [
   { type: 'studio-display', label: 'Studio Display' },
@@ -80,7 +81,7 @@ function IconBtn({ title, onClick, disabled, children }: { title: string; onClic
 
 function ObjectRow({ obj, selected, index, total, onSelect, onRename, onToggleVisible, onToggleLocked, onRemove, onMoveUp, onMoveDown }: {
   obj: SceneObject; selected: boolean; index: number; total: number
-  onSelect: () => void; onRename: (n: string) => void; onToggleVisible: () => void; onToggleLocked: () => void; onRemove: () => void; onMoveUp: () => void; onMoveDown: () => void
+  onSelect: (additive: boolean) => void; onRename: (n: string) => void; onToggleVisible: () => void; onToggleLocked: () => void; onRemove: () => void; onMoveUp: () => void; onMoveDown: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(obj.name)
@@ -93,7 +94,7 @@ function ObjectRow({ obj, selected, index, total, onSelect, onRename, onToggleVi
 
   return (
     <div
-      onClick={onSelect}
+      onClick={event => onSelect(event.shiftKey)}
       style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 6px 5px 10px', borderRadius: 6, margin: '0 6px', background: selected ? 'var(--accent-glow)' : 'transparent', border: selected ? '1px solid rgba(59,126,248,0.3)' : '1px solid transparent', cursor: 'pointer', opacity: obj.visible ? 1 : 0.4 }}
       onMouseEnter={e => { if (!selected) (e.currentTarget).style.background = 'var(--surface)' }}
       onMouseLeave={e => { if (!selected) (e.currentTarget).style.background = 'transparent' }}
@@ -230,10 +231,10 @@ export default function LeftSidebar() {
               <ObjectRow
                 key={obj.id}
                 obj={obj}
-                selected={obj.id === selectedId}
+                selected={(state.selectedIds ?? [selectedId]).includes(obj.id)}
                 index={idx}
                 total={validObjects.length}
-                onSelect={() => selectObject(obj.id)}
+                onSelect={additive => selectObject(obj.id, additive)}
                 onRename={name => updateObject(obj.id, { name })}
                 onToggleVisible={() => updateObject(obj.id, { visible: !obj.visible })}
                 onToggleLocked={() => updateObject(obj.id, { locked: !obj.locked })}
@@ -248,7 +249,13 @@ export default function LeftSidebar() {
 
       <Sep />
 
+      <SectionLabel>Auto Layout</SectionLabel>
+      <AutoLayoutPanel />
+
+      <Sep />
+
       {/* Non-destructive layout patterns */}
+      <div style={{ display: 'none' }}>
       <SectionLabel>Pattern Layout</SectionLabel>
       <div style={{ padding: '0 10px 10px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
@@ -292,6 +299,8 @@ export default function LeftSidebar() {
         </button>}
         {liveLink && copyMode === 'clone' && <div style={{ marginTop: 8, padding: '6px 7px', borderRadius: 5, background: 'var(--accent-glow)', color: 'var(--accent)', fontSize: 9, textAlign: 'center' }}>Live pattern active · changes apply automatically</div>}
         <div style={{ marginTop: 6, fontSize: 9, lineHeight: 1.35, color: 'var(--text-dim)' }}>{liveLink && copyMode === 'clone' ? 'Device, material, color, and screen edits stay synchronized while placement and rotation recalculate from the selected axes.' : copyMode === 'clone' ? 'Creates fully independent copies from the selected device.' : 'Rearranges visible, unlocked devices without creating copies.'}</div>
+      </div>
+
       </div>
 
       <Sep />

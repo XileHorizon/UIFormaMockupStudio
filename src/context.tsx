@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig, LayoutPattern, PatternPlane, PatternAxis, RotationFollowAxis, CopyMode } from './types'
+import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig, LayoutPattern, PatternPlane, PatternAxis, RotationFollowAxis, CopyMode, LayoutModifier, LayoutModifierType } from './types'
 
 export interface EditorContextValue {
   state: AppState
@@ -8,7 +8,7 @@ export interface EditorContextValue {
   addText: () => void
   addShape: (shape: ShapeType) => void
   removeObject: (id: string) => void
-  selectObject: (id: string | null) => void
+  selectObject: (id: string | null, additive?: boolean) => void
   duplicateObject: (id: string) => void
   updateObject: (id: string, changes: Partial<Omit<SceneObject, 'id'>>) => void
   updateDevice: (id: string, changes: Partial<DeviceConfig>) => void
@@ -27,6 +27,9 @@ export interface EditorContextValue {
   distributeObjects: (axis: 'horizontal' | 'vertical') => void
   applyLayout: (pattern: LayoutPattern, spacing: number, depth: number, curve: number, plane?: PatternPlane, mirrorAxis?: PatternAxis, rotationAxis?: RotationFollowAxis) => void
   generatePattern: (pattern: LayoutPattern, spacing: number, depth: number, curve: number, count: number, mode: CopyMode, plane: PatternPlane, mirrorAxis: PatternAxis, rotationAxis: RotationFollowAxis) => void
+  addLayoutModifier: (type: LayoutModifierType) => void
+  updateLayoutModifier: (id: string, changes: Partial<LayoutModifier>) => void
+  removeLayoutModifier: (id: string) => void
 }
 
 export const EditorContext = createContext<EditorContextValue | null>(null)

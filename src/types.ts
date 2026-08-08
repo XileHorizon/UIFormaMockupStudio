@@ -24,6 +24,40 @@ export type PatternPlane = 'xy' | 'xz' | 'yz'
 export type PatternAxis = 'x' | 'y' | 'z'
 export type RotationFollowAxis = PatternAxis | 'none'
 export type CopyMode = 'clone' | 'linked'
+export type LayoutModifierType = 'radial' | 'mirror'
+export type LayoutOrientation = 'follow' | 'preserve'
+
+export interface LayoutPivot { x: number; y: number; z: number }
+export interface RadialLayoutSettings {
+  axis: PatternAxis
+  count: number
+  angle: number
+  startAngle: number
+  direction: 1 | -1
+  orientation: LayoutOrientation
+  pivot: LayoutPivot
+  radiusOffset: number
+}
+export interface MirrorLayoutSettings {
+  axes: PatternAxis[]
+  pivot: LayoutPivot
+}
+export type LayoutSettings = RadialLayoutSettings | MirrorLayoutSettings
+
+export interface InstanceStyleOverrides {
+  device?: Partial<DeviceConfig>
+  textConfig?: Partial<TextConfig>
+  shapeConfig?: Partial<ShapeConfig>
+}
+
+export interface LayoutModifier {
+  id: string
+  type: LayoutModifierType
+  enabled: boolean
+  sourceIds: string[]
+  settings: LayoutSettings
+  instanceOverrides: Record<string, InstanceStyleOverrides>
+}
 
 // ── Sub-configs ───────────────────────────────────────────────────────────────
 
@@ -126,6 +160,8 @@ export interface SceneObject {
 export interface AppState {
   objects: SceneObject[]
   selectedId: string | null
+  selectedIds?: string[]
+  layouts?: LayoutModifier[]
   background: Background
   lighting: LightingConfig
   activeTool: 'select' | 'move' | 'rotate' | 'scale'

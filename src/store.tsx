@@ -1,7 +1,8 @@
 import { useContext, useReducer, useCallback, type ReactNode } from 'react'
-import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig, LayoutPattern, PatternPlane, PatternAxis, RotationFollowAxis, CopyMode } from './types'
+import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig, LayoutPattern, PatternPlane, PatternAxis, RotationFollowAxis, CopyMode, LayoutModifier, LayoutModifierType } from './types'
 import { createSceneObject, createTextObject, createShapeObject, genId, defaultTransform, TEMPLATES } from './types'
 import { EditorContext, type EditorContextValue } from './context.tsx'
+import { evaluateScene } from './layout-engine'
 
 // ── Sanitizer ─────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,8 @@ const initialState: AppState = {
   activeTool: 'select',
   showExportModal: false,
   showTemplatesModal: false,
+  selectedIds: [initialObject.id],
+  layouts: [],
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────
@@ -70,7 +73,7 @@ type Action =
   | { type: 'ADD_TEXT' }
   | { type: 'ADD_SHAPE'; payload: { shape: ShapeType } }
   | { type: 'REMOVE_OBJECT'; payload: { id: string } }
-  | { type: 'SELECT_OBJECT'; payload: { id: string | null } }
+  | { type: 'SELECT_OBJECT'; payload: { id: string | null; additive?: boolean } }
   | { type: 'DUPLICATE_OBJECT'; payload: { id: string } }
   | { type: 'UPDATE_OBJECT'; payload: { id: string; changes: Partial<Omit<SceneObject, 'id'>> } }
   | { type: 'UPDATE_OBJECT_DEVICE'; payload: { id: string; changes: Partial<DeviceConfig> } }
@@ -89,6 +92,9 @@ type Action =
   | { type: 'DISTRIBUTE_OBJECTS'; payload: { axis: 'horizontal' | 'vertical' } }
   | { type: 'APPLY_LAYOUT'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number; plane?: PatternPlane; mirrorAxis?: PatternAxis; rotationAxis?: RotationFollowAxis; targetIds?: string[]; asOffsets?: boolean } }
   | { type: 'GENERATE_PATTERN'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number; count: number; mode: CopyMode; plane: PatternPlane; mirrorAxis: PatternAxis; rotationAxis: RotationFollowAxis } }
+  | { type: 'ADD_LAYOUT_MODIFIER'; payload: { modifierType: LayoutModifierType } }
+  | { type: 'UPDATE_LAYOUT_MODIFIER'; payload: { id: string; changes: Partial<LayoutModifier> } }
+  | { type: 'REMOVE_LAYOUT_MODIFIER'; payload: { id: string } }
 
 function updateObj(objects: SceneObject[], id: string, up: (o: SceneObject) => SceneObject): SceneObject[] {
   return objects.map(o => (o.id === id ? up(o) : o))
@@ -135,31 +141,59 @@ function reducer(state: AppState, action: Action): AppState {
       const count = state.objects.filter(o => o.elementType === 'device' && o.device?.type === action.payload.deviceType).length + 1
       const label = DEVICE_NAMES[action.payload.deviceType] ?? action.payload.deviceType.charAt(0).toUpperCase() + action.payload.deviceType.slice(1)
       const obj = createSceneObject(action.payload.deviceType, `${label} ${count}`, offsetForNew(state.objects))
-      return { ...state, objects: [...state.objects, obj], selectedId: obj.id }
+      return { ...state, objects: [...state.objects, obj], selectedId: obj.id, selectedIds: [obj.id] }
     }
     case 'ADD_TEXT': {
       const count = state.objects.filter(o => o.elementType === 'text').length + 1
       const obj = createTextObject(`Text ${count}`, offsetForNew(state.objects))
-      return { ...state, objects: [...state.objects, obj], selectedId: obj.id }
+      return { ...state, objects: [...state.objects, obj], selectedId: obj.id, selectedIds: [obj.id] }
     }
     case 'ADD_SHAPE': {
       const count = state.objects.filter(o => o.elementType === 'shape' && o.shapeConfig?.shape === action.payload.shape).length + 1
       const obj = createShapeObject(action.payload.shape, `${action.payload.shape.charAt(0).toUpperCase() + action.payload.shape.slice(1)} ${count}`, offsetForNew(state.objects))
-      return { ...state, objects: [...state.objects, obj], selectedId: obj.id }
+      return { ...state, objects: [...state.objects, obj], selectedId: obj.id, selectedIds: [obj.id] }
     }
     case 'REMOVE_OBJECT': {
       const remaining = state.objects.filter(o => o.id !== action.payload.id)
       const newSel = state.selectedId === action.payload.id ? (remaining[remaining.length - 1]?.id ?? null) : state.selectedId
-      return { ...state, objects: remaining, selectedId: newSel }
+      const selectedIds = (state.selectedIds ?? []).filter(id => id !== action.payload.id)
+      return { ...state, objects: remaining, selectedId: newSel, selectedIds: selectedIds.length ? selectedIds : (newSel ? [newSel] : []), layouts: (state.layouts ?? []).map(layout => ({ ...layout, sourceIds: layout.sourceIds.filter(id => id !== action.payload.id) })).filter(layout => layout.sourceIds.length) }
     }
-    case 'SELECT_OBJECT':
-      return { ...state, selectedId: action.payload.id }
+    case 'SELECT_OBJECT': {
+      const id = action.payload.id
+      if (!id) return { ...state, selectedId: null, selectedIds: [] }
+      const current = state.selectedIds ?? (state.selectedId ? [state.selectedId] : [])
+      const selectedIds = action.payload.additive
+        ? (current.includes(id) ? current.filter(value => value !== id) : [...current, id])
+        : [id]
+      return { ...state, selectedId: selectedIds[selectedIds.length - 1] ?? null, selectedIds }
+    }
+    case 'ADD_LAYOUT_MODIFIER': {
+      const evaluated = evaluateScene(state)
+      const selected = new Set(state.selectedIds?.length ? state.selectedIds : state.selectedId ? [state.selectedId] : [])
+      const selectedEvaluated = evaluated.filter(object => selected.has(object.id))
+      const sourceIds = [...new Set(selectedEvaluated.map(object => object.sourceId ?? object.id))]
+      if (!sourceIds.length) return state
+      // World origin is the intuitive default rotation/reflection axis. The
+      // inspector stores an explicit pivot so selection-center/custom pivots
+      // can be added without changing evaluation semantics.
+      const pivot = { x: 0, y: 0, z: 0 }
+      const id = genId().replace('obj_', 'layout_')
+      const modifier: LayoutModifier = action.payload.modifierType === 'radial'
+        ? { id, type: 'radial', enabled: true, sourceIds, settings: { axis: 'z', count: 6, angle: 360, startAngle: 0, direction: 1, orientation: 'follow', pivot, radiusOffset: 0 }, instanceOverrides: {} }
+        : { id, type: 'mirror', enabled: true, sourceIds, settings: { axes: ['x'], pivot }, instanceOverrides: {} }
+      return { ...state, layouts: [...(state.layouts ?? []), modifier] }
+    }
+    case 'UPDATE_LAYOUT_MODIFIER':
+      return { ...state, layouts: (state.layouts ?? []).map(layout => layout.id === action.payload.id ? { ...layout, ...action.payload.changes } as LayoutModifier : layout) }
+    case 'REMOVE_LAYOUT_MODIFIER':
+      return { ...state, layouts: (state.layouts ?? []).filter(layout => layout.id !== action.payload.id), selectedId: null, selectedIds: [] }
     case 'DUPLICATE_OBJECT': {
       const src = state.objects.find(o => o.id === action.payload.id)
       if (!src) return state
       const copy: SceneObject = { ...src, id: genId(), name: src.name + ' Copy', transform: { ...src.transform, posX: src.transform.posX + 160, posY: src.transform.posY + 90 } }
       const idx = state.objects.findIndex(o => o.id === action.payload.id)
-      return { ...state, objects: [...state.objects.slice(0, idx + 1), copy, ...state.objects.slice(idx + 1)], selectedId: copy.id }
+      return { ...state, objects: [...state.objects.slice(0, idx + 1), copy, ...state.objects.slice(idx + 1)], selectedId: copy.id, selectedIds: [copy.id] }
     }
     case 'UPDATE_OBJECT': {
       const ids = linkedIds(state.objects, action.payload.id)
@@ -170,6 +204,11 @@ function reducer(state: AppState, action: Action): AppState {
         : ids.has(o.id) ? { ...o, ...shared } : o) }
     }
     case 'UPDATE_OBJECT_DEVICE': {
+      if (action.payload.id.startsWith('instance:')) {
+        const instance = evaluateScene(state).find(object => object.id === action.payload.id)
+        if (!instance?.generatedBy || !instance.instanceKey) return state
+        return { ...state, layouts: (state.layouts ?? []).map(layout => layout.id !== instance.generatedBy ? layout : ({ ...layout, instanceOverrides: { ...layout.instanceOverrides, [instance.instanceKey!]: { ...layout.instanceOverrides[instance.instanceKey!], device: { ...layout.instanceOverrides[instance.instanceKey!]?.device, ...action.payload.changes } } } })) }
+      }
       const ids = linkedIds(state.objects, action.payload.id)
       return { ...state, objects: state.objects.map(o => ids.has(o.id) ? { ...o, device: { ...o.device, ...action.payload.changes } } : o) }
     }
@@ -205,8 +244,18 @@ function reducer(state: AppState, action: Action): AppState {
       }
     }
     case 'UPDATE_OBJECT_TEXT':
+      if (action.payload.id.startsWith('instance:')) {
+        const instance = evaluateScene(state).find(object => object.id === action.payload.id)
+        if (!instance?.generatedBy || !instance.instanceKey) return state
+        return { ...state, layouts: (state.layouts ?? []).map(layout => layout.id !== instance.generatedBy ? layout : ({ ...layout, instanceOverrides: { ...layout.instanceOverrides, [instance.instanceKey!]: { ...layout.instanceOverrides[instance.instanceKey!], textConfig: { ...layout.instanceOverrides[instance.instanceKey!]?.textConfig, ...action.payload.changes } } } })) }
+      }
       return { ...state, objects: updateObj(state.objects, action.payload.id, o => ({ ...o, textConfig: { ...o.textConfig!, ...action.payload.changes } })) }
     case 'UPDATE_OBJECT_SHAPE':
+      if (action.payload.id.startsWith('instance:')) {
+        const instance = evaluateScene(state).find(object => object.id === action.payload.id)
+        if (!instance?.generatedBy || !instance.instanceKey) return state
+        return { ...state, layouts: (state.layouts ?? []).map(layout => layout.id !== instance.generatedBy ? layout : ({ ...layout, instanceOverrides: { ...layout.instanceOverrides, [instance.instanceKey!]: { ...layout.instanceOverrides[instance.instanceKey!], shapeConfig: { ...layout.instanceOverrides[instance.instanceKey!]?.shapeConfig, ...action.payload.changes } } } })) }
+      }
       return { ...state, objects: updateObj(state.objects, action.payload.id, o => ({ ...o, shapeConfig: { ...o.shapeConfig!, ...action.payload.changes } })) }
     case 'REORDER_OBJECTS': {
       const arr = [...state.objects]
@@ -228,7 +277,7 @@ function reducer(state: AppState, action: Action): AppState {
       const tpl = TEMPLATES.find(t => t.id === action.payload.templateId)
       if (!tpl) return state
       const objects: SceneObject[] = tpl.objects.map(o => ({ ...o, id: genId() }))
-      return { ...state, objects, selectedId: objects[0]?.id ?? null, background: { ...state.background, ...tpl.background }, showTemplatesModal: false }
+      return { ...state, objects, layouts: [], selectedId: objects[0]?.id ?? null, selectedIds: objects[0] ? [objects[0].id] : [], background: { ...state.background, ...tpl.background }, showTemplatesModal: false }
     }
     case 'IMPORT_PROJECT':
       return { ...action.payload, objects: sanitizeObjects(action.payload.objects ?? []), showExportModal: false, showTemplatesModal: false }
@@ -399,13 +448,13 @@ export function decodeProjectFromUrl(hash: string): AppState | null {
 
 export function EditorProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
-  const selectedObject = state.objects.find(o => o.id === state.selectedId) ?? null
+  const selectedObject = evaluateScene(state).find(o => o.id === state.selectedId) ?? null
 
   const addDevice = useCallback((deviceType: DeviceType) => dispatch({ type: 'ADD_DEVICE', payload: { deviceType } }), [])
   const addText = useCallback(() => dispatch({ type: 'ADD_TEXT' }), [])
   const addShape = useCallback((shape: ShapeType) => dispatch({ type: 'ADD_SHAPE', payload: { shape } }), [])
   const removeObject = useCallback((id: string) => dispatch({ type: 'REMOVE_OBJECT', payload: { id } }), [])
-  const selectObject = useCallback((id: string | null) => dispatch({ type: 'SELECT_OBJECT', payload: { id } }), [])
+  const selectObject = useCallback((id: string | null, additive = false) => dispatch({ type: 'SELECT_OBJECT', payload: { id, additive } }), [])
   const duplicateObject = useCallback((id: string) => dispatch({ type: 'DUPLICATE_OBJECT', payload: { id } }), [])
   const updateObject = useCallback((id: string, changes: Partial<Omit<SceneObject, 'id'>>) => dispatch({ type: 'UPDATE_OBJECT', payload: { id, changes } }), [])
   const updateDevice = useCallback((id: string, changes: Partial<DeviceConfig>) => dispatch({ type: 'UPDATE_OBJECT_DEVICE', payload: { id, changes } }), [])
@@ -424,9 +473,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const distributeObjects = useCallback((axis: 'horizontal' | 'vertical') => dispatch({ type: 'DISTRIBUTE_OBJECTS', payload: { axis } }), [])
   const applyLayout = useCallback((pattern: LayoutPattern, spacing: number, depth: number, curve: number, plane?: PatternPlane, mirrorAxis?: PatternAxis, rotationAxis?: RotationFollowAxis) => dispatch({ type: 'APPLY_LAYOUT', payload: { pattern, spacing, depth, curve, plane, mirrorAxis, rotationAxis } }), [])
   const generatePattern = useCallback((pattern: LayoutPattern, spacing: number, depth: number, curve: number, count: number, mode: CopyMode, plane: PatternPlane, mirrorAxis: PatternAxis, rotationAxis: RotationFollowAxis) => dispatch({ type: 'GENERATE_PATTERN', payload: { pattern, spacing, depth, curve, count, mode, plane, mirrorAxis, rotationAxis } }), [])
+  const addLayoutModifier = useCallback((modifierType: LayoutModifierType) => dispatch({ type: 'ADD_LAYOUT_MODIFIER', payload: { modifierType } }), [])
+  const updateLayoutModifier = useCallback((id: string, changes: Partial<LayoutModifier>) => dispatch({ type: 'UPDATE_LAYOUT_MODIFIER', payload: { id, changes } }), [])
+  const removeLayoutModifier = useCallback((id: string) => dispatch({ type: 'REMOVE_LAYOUT_MODIFIER', payload: { id } }), [])
 
   return (
-    <EditorContext.Provider value={{ state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, duplicateObject, updateObject, updateDevice, updateTransform, updateText, updateShape, reorderObjects, setBackground, setLighting, setTool, toggleExportModal, toggleTemplatesModal, loadTemplate, importProject, alignObjects, distributeObjects, applyLayout, generatePattern }}>
+    <EditorContext.Provider value={{ state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, duplicateObject, updateObject, updateDevice, updateTransform, updateText, updateShape, reorderObjects, setBackground, setLighting, setTool, toggleExportModal, toggleTemplatesModal, loadTemplate, importProject, alignObjects, distributeObjects, applyLayout, generatePattern, addLayoutModifier, updateLayoutModifier, removeLayoutModifier }}>
       {children}
     </EditorContext.Provider>
   )
