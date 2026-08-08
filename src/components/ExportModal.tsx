@@ -17,8 +17,9 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
   const [quality, setQuality] = useState(95)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [rayTracing, setRayTracing] = useState(false)
-  const [raySamples, setRaySamples] = useState(32)
+  const [raySamples, setRaySamples] = useState(64)
   const [rayBounces, setRayBounces] = useState(6)
+  const [reduceFireflies, setReduceFireflies] = useState(true)
   const [renderProgress, setRenderProgress] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -37,7 +38,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
     if (rayTracing) {
       await new Promise<void>((resolve, reject) => {
-        const timeout = window.setTimeout(() => finish(new Error('Ray tracing timed out. Try fewer samples or a lower GPU setting.')), 120_000)
+        const timeout = window.setTimeout(() => finish(new Error('Ray tracing timed out. Try fewer samples or a lower GPU setting.')), Math.max(120_000, raySamples * 4_000))
         const onReady = () => finish()
         const onError = (event: Event) => finish(new Error((event as CustomEvent<{ message: string }>).detail?.message || 'Ray tracing failed for this scene.'))
         const onProgress = (event: Event) => {
@@ -54,7 +55,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
         window.addEventListener('mockframe-pathtrace-ready', onReady)
         window.addEventListener('mockframe-pathtrace-error', onError)
         window.addEventListener('mockframe-pathtrace-progress', onProgress)
-        window.dispatchEvent(new CustomEvent('mockframe-pathtrace', { detail: { enabled: true, samples: raySamples, bounces: rayBounces } }))
+        window.dispatchEvent(new CustomEvent('mockframe-pathtrace', { detail: { enabled: true, samples: raySamples, bounces: rayBounces, filterGlossyFactor: reduceFireflies ? 0.65 : 0 } }))
       })
     }
     try {
@@ -243,8 +244,12 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
             {rayTracing && <>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Samples</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{raySamples}</span></div>
-                <input type="range" min={8} max={128} step={8} value={raySamples} onChange={event => setRaySamples(Number(event.target.value))} style={{ width: '100%' }} />
+                <input type="range" min={8} max={512} step={8} value={raySamples} onChange={event => setRaySamples(Number(event.target.value))} style={{ width: '100%' }} />
               </div>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, fontSize: 10, color: 'var(--text-muted)' }}>
+                <span><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 2 }}>Reduce speckles</strong>Filters bright fireflies while preserving normal reflections</span>
+                <input type="checkbox" checked={reduceFireflies} onChange={event => setReduceFireflies(event.target.checked)} />
+              </label>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Light bounces</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{rayBounces}</span></div>
                 <input type="range" min={1} max={12} step={1} value={rayBounces} onChange={event => setRayBounces(Number(event.target.value))} style={{ width: '100%' }} />
@@ -264,7 +269,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Compression quality</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{quality}%</span></div>
               <input type="range" min={50} max={100} step={1} value={quality} onChange={event => setQuality(Number(event.target.value))} style={{ width: '100%' }} />
             </div>}
-            <button onClick={() => { setScale(4); setGpuDpr(4); setShadowLevel(3); setQuality(100) }} style={{ padding: '7px 9px', borderRadius: 5, border: '1px solid var(--accent)', background: 'var(--accent-glow)', color: 'var(--accent)', cursor: 'pointer', fontSize: 10, fontWeight: 600 }}>Max GPU preset</button>
+            <button onClick={() => { setScale(4); setGpuDpr(4); setShadowLevel(3); setQuality(100); setRaySamples(256); setReduceFireflies(true) }} style={{ padding: '7px 9px', borderRadius: 5, border: '1px solid var(--accent)', background: 'var(--accent-glow)', color: 'var(--accent)', cursor: 'pointer', fontSize: 10, fontWeight: 600 }}>Max GPU preset</button>
           </div>}
 
           {error && <div role="alert" style={{ padding: '8px 10px', borderRadius: 6, background: 'rgba(255,70,70,.08)', border: '1px solid rgba(255,90,90,.3)', color: 'var(--danger)', fontSize: 10, lineHeight: 1.4 }}>{error}</div>}
