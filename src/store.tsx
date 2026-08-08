@@ -173,8 +173,37 @@ function reducer(state: AppState, action: Action): AppState {
       const ids = linkedIds(state.objects, action.payload.id)
       return { ...state, objects: state.objects.map(o => ids.has(o.id) ? { ...o, device: { ...o.device, ...action.payload.changes } } : o) }
     }
-    case 'UPDATE_OBJECT_TRANSFORM':
-      return { ...state, objects: updateObj(state.objects, action.payload.id, o => ({ ...o, transform: { ...o.transform, ...action.payload.changes } })) }
+    case 'UPDATE_OBJECT_TRANSFORM': {
+      const source = state.objects.find(o => o.id === action.payload.id)
+      if (!source?.linkedGroupId) {
+        return { ...state, objects: updateObj(state.objects, action.payload.id, o => ({ ...o, transform: { ...o.transform, ...action.payload.changes } })) }
+      }
+
+      // Treat edits to any live-linked member as deltas from its current
+      // transform. Applying those deltas to every member preserves the unique
+      // offsets and angles calculated by the pattern (the radial/kaleidoscope
+      // effect) while the whole group responds continuously to the drag.
+      const linearKeys: (keyof Transform)[] = ['posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ']
+      const deltas = new Map<keyof Transform, number>()
+      linearKeys.forEach(key => {
+        const value = action.payload.changes[key]
+        if (typeof value === 'number') deltas.set(key, value - source.transform[key])
+      })
+      const scaleRatio = typeof action.payload.changes.scale === 'number' && source.transform.scale !== 0
+        ? action.payload.changes.scale / source.transform.scale
+        : null
+
+      return {
+        ...state,
+        objects: state.objects.map(o => {
+          if (o.linkedGroupId !== source.linkedGroupId) return o
+          const transform = { ...o.transform }
+          deltas.forEach((delta, key) => { transform[key] += delta })
+          if (scaleRatio != null) transform.scale *= scaleRatio
+          return { ...o, transform }
+        }),
+      }
+    }
     case 'UPDATE_OBJECT_TEXT':
       return { ...state, objects: updateObj(state.objects, action.payload.id, o => ({ ...o, textConfig: { ...o.textConfig!, ...action.payload.changes } })) }
     case 'UPDATE_OBJECT_SHAPE':

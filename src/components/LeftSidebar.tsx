@@ -211,7 +211,10 @@ export default function LeftSidebar() {
   useEffect(() => {
     if (!liveLink || copyMode !== 'clone' || !selIsDevice || !selectedId) return
     generatePattern(layout, layoutSpacing, layoutDepth, layoutCurve, copyCount, 'linked', patternPlane, mirrorAxis, rotationAxis)
-  }, [liveLink, copyMode, layout, layoutSpacing, layoutDepth, layoutCurve, copyCount, patternPlane, mirrorAxis, rotationAxis, selIsDevice, selectedId, generatePattern])
+    // Selection is intentionally not a dependency. Clicking a different group
+    // member must not regenerate the arrangement; the next control change uses
+    // whichever member is currently selected as the source.
+  }, [liveLink, copyMode, layout, layoutSpacing, layoutDepth, layoutCurve, copyCount, patternPlane, mirrorAxis, rotationAxis, generatePattern])
 
   return (
     <div style={{ width: 220, flexShrink: 0, background: 'var(--panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
