@@ -25,6 +25,8 @@ function ModifierEditor({ modifier }: { modifier: LayoutModifier }) {
       <Slider label="Angle" value={settings.angle} min={-360} max={360} onChange={angle => setSettings({ ...settings, angle })} />
       <Slider label="Start" value={settings.startAngle} min={-1440} max={1440} onChange={startAngle => setSettings({ ...settings, startAngle })} />
       <Slider label="Radius +" value={settings.radiusOffset} min={-500} max={1000} onChange={radiusOffset => setSettings({ ...settings, radiusOffset })} />
+      <Slider label="Rotation" value={settings.rotationOffset ?? 0} min={-360} max={360} onChange={rotationOffset => setSettings({ ...settings, rotationOffset })} />
+      <Slider label="3D Tilt" value={settings.tiltAmount ?? 0} min={-180} max={180} onChange={tiltAmount => setSettings({ ...settings, tiltAmount })} />
       <div style={{ display: 'flex', gap: 5, marginTop: 7 }}><button style={buttonStyle} onClick={() => setSettings({ ...settings, direction: settings.direction === 1 ? -1 : 1 })}>{settings.direction === 1 ? '↻ Clockwise' : '↺ Counterclockwise'}</button><button style={{ ...buttonStyle, color: '#ef7777', marginLeft: 'auto' }} onClick={() => removeLayoutModifier(modifier.id)}>Remove</button></div>
     </div>
   }

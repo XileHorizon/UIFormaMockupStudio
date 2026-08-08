@@ -180,7 +180,7 @@ function reducer(state: AppState, action: Action): AppState {
       const pivot = { x: 0, y: 0, z: 0 }
       const id = genId().replace('obj_', 'layout_')
       const modifier: LayoutModifier = action.payload.modifierType === 'radial'
-        ? { id, type: 'radial', enabled: true, sourceIds, settings: { axis: 'z', count: 6, angle: 360, startAngle: 0, direction: 1, orientation: 'follow', pivot, radiusOffset: 0 }, instanceOverrides: {} }
+        ? { id, type: 'radial', enabled: true, sourceIds, settings: { axis: 'z', count: 6, angle: 360, startAngle: 0, direction: 1, orientation: 'follow', pivot, radiusOffset: 0, rotationOffset: 0, tiltAmount: 0 }, instanceOverrides: {} }
         : { id, type: 'mirror', enabled: true, sourceIds, settings: { axes: ['x'], pivot }, instanceOverrides: {} }
       return { ...state, layouts: [...(state.layouts ?? []), modifier] }
     }

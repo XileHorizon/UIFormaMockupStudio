@@ -21,6 +21,12 @@ function axisVector(axis: PatternAxis) {
   return axis === 'x' ? new THREE.Vector3(1, 0, 0) : axis === 'y' ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1)
 }
 
+function radialBasis(axis: PatternAxis) {
+  if (axis === 'x') return { u: new THREE.Vector3(0, 1, 0), v: new THREE.Vector3(0, 0, 1) }
+  if (axis === 'y') return { u: new THREE.Vector3(0, 0, 1), v: new THREE.Vector3(1, 0, 0) }
+  return { u: new THREE.Vector3(1, 0, 0), v: new THREE.Vector3(0, 1, 0) }
+}
+
 function radialTransforms(input: Transform, settings: RadialLayoutSettings): Transform[] {
   const count = Math.max(1, Math.min(256, Math.round(settings.count)))
   // A constant-radius pattern cannot represent spans beyond one revolution
@@ -29,30 +35,28 @@ function radialTransforms(input: Transform, settings: RadialLayoutSettings): Tra
   // through multiple revolutions without changing instance identity.
   const angle = THREE.MathUtils.clamp(settings.angle, -360, 360)
   const pivot = new THREE.Vector3(settings.pivot.x, settings.pivot.y, settings.pivot.z)
+  const normal = axisVector(settings.axis)
+  const { u, v } = radialBasis(settings.axis)
   const relative = position(input).sub(pivot)
-  const radial = relative.clone().sub(axisVector(settings.axis).multiplyScalar(relative.dot(axisVector(settings.axis))))
-  if (settings.radiusOffset) relative.add(radial.lengthSq() ? radial.normalize().multiplyScalar(settings.radiusOffset) : new THREE.Vector3())
-  // A closed revolution must not include the endpoint twice. Use a smooth
-  // blend near complete revolutions so stepping 359 <-> 360 cannot make the
-  // last instance jump between opposite ends of the pattern.
-  const revolutions = Math.max(1, Math.round(Math.abs(angle) / 360))
-  const closedAngle = revolutions * 360
-  const closeness = Math.max(0, 1 - Math.abs(Math.abs(angle) - closedAngle) / 10)
-  const divisor = Math.max(1, (count - 1) + closeness)
+  const axialOffset = normal.clone().multiplyScalar(relative.dot(normal))
+  const radius = relative.clone().sub(axialOffset).length() + settings.radiusOffset
+  const closed = Math.abs(Math.abs(angle) - 360) < 0.0001
+  const divisor = Math.max(1, closed ? count : count - 1)
+  const rotationOffset = settings.rotationOffset ?? 0
+  const tiltAmount = settings.tiltAmount ?? 0
   return Array.from({ length: count }, (_, index) => {
     const degrees = settings.startAngle + settings.direction * angle * index / divisor
-    const q = new THREE.Quaternion().setFromAxisAngle(axisVector(settings.axis), THREE.MathUtils.degToRad(degrees))
-    const p = relative.clone().applyQuaternion(q).add(pivot)
+    const theta = THREE.MathUtils.degToRad(degrees)
+    const radialDirection = u.clone().multiplyScalar(Math.sin(theta)).add(v.clone().multiplyScalar(Math.cos(theta))).normalize()
+    const p = pivot.clone().add(axialOffset).addScaledVector(radialDirection, radius)
     if (settings.orientation === 'follow') {
-      // Keep the radial-axis angle continuous. Quaternion -> Euler conversion
-      // represents 240deg as -120deg, which made instances appear to reverse
-      // after crossing 180deg even though their positions were correct.
-      const axisRotation = settings.axis === 'x'
-        ? { rotX: input.rotX + degrees }
-        : settings.axis === 'y'
-          ? { rotY: input.rotY + degrees }
-          : { rotZ: input.rotZ + degrees }
-      return { ...input, posX: p.x, posY: p.y, posZ: p.z, ...axisRotation }
+      // The same theta drives position, path rotation, radial direction and
+      // tilt. Tilt is applied around the circle's world-space tangent, then
+      // composed with the path rotation as quaternions.
+      const tangent = u.clone().multiplyScalar(Math.cos(theta)).add(v.clone().multiplyScalar(Math.sin(theta))).normalize()
+      const pathRotation = new THREE.Quaternion().setFromAxisAngle(normal, THREE.MathUtils.degToRad(degrees + rotationOffset))
+      const radialTilt = new THREE.Quaternion().setFromAxisAngle(tangent, THREE.MathUtils.degToRad(tiltAmount))
+      return toTransform(p, radialTilt.multiply(pathRotation), input)
     }
     return toTransform(p, rotation(input), input)
   })

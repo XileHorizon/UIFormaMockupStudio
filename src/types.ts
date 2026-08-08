@@ -37,6 +37,8 @@ export interface RadialLayoutSettings {
   orientation: LayoutOrientation
   pivot: LayoutPivot
   radiusOffset: number
+  rotationOffset: number
+  tiltAmount: number
 }
 export interface MirrorLayoutSettings {
   axes: PatternAxis[]
