@@ -55,7 +55,11 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
         window.addEventListener('mockframe-pathtrace-ready', onReady)
         window.addEventListener('mockframe-pathtrace-error', onError)
         window.addEventListener('mockframe-pathtrace-progress', onProgress)
-        window.dispatchEvent(new CustomEvent('mockframe-pathtrace', { detail: { enabled: true, samples: raySamples, bounces: rayBounces, filterGlossyFactor: reduceFireflies ? 0.65 : 0 } }))
+        // A strong glossy filter removes fireflies, but it also suppresses the
+        // indirect specular paths that make dark metal readable. Keep the
+        // filter deliberately gentle and rely primarily on the higher sample
+        // count for cleanup.
+        window.dispatchEvent(new CustomEvent('mockframe-pathtrace', { detail: { enabled: true, samples: raySamples, bounces: rayBounces, filterGlossyFactor: reduceFireflies ? 0.12 : 0 } }))
       })
     }
     try {
@@ -250,7 +254,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
                 <input type="range" min={8} max={512} step={8} value={raySamples} onChange={event => setRaySamples(Number(event.target.value))} style={{ width: '100%' }} />
               </div>
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, fontSize: 10, color: 'var(--text-muted)' }}>
-                <span><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 2 }}>Reduce speckles</strong>Filters bright fireflies while preserving normal reflections</span>
+                <span><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 2 }}>Reduce speckles</strong>Gently filters bright fireflies without crushing metal reflections</span>
                 <input type="checkbox" checked={reduceFireflies} onChange={event => setReduceFireflies(event.target.checked)} />
               </label>
               <div>

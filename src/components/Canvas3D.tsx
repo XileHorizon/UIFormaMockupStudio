@@ -128,7 +128,7 @@ function PathTracingController() {
         }
         const tracer = tracerRef.current
         tracer.bounces = Math.max(1, Math.min(12, detail.bounces ?? 6))
-        tracer.filterGlossyFactor = Math.max(0, Math.min(1, detail.filterGlossyFactor ?? 0.65))
+        tracer.filterGlossyFactor = Math.max(0, Math.min(1, detail.filterGlossyFactor ?? 0.12))
         tracer.textureSize.set(2048, 2048)
         targetSamplesRef.current = Math.max(1, Math.min(512, detail.samples ?? 64))
         readySentRef.current = false
