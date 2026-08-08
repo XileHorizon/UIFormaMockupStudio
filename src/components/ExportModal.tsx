@@ -29,6 +29,9 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
     const previousSelection = state.selectedId
     const previousClassName = canvasRef.current?.className ?? ''
     const previousBackground = canvasRef.current?.style.background ?? ''
+    let frozenWebglFrame: HTMLImageElement | null = null
+    let webglCanvas: HTMLCanvasElement | null = null
+    let previousCanvasVisibility = ''
     selectObject(null)
     window.dispatchEvent(new CustomEvent('mockframe-render-quality', { detail: { dpr: gpuDpr, shadowMapSize: 2 ** (shadowLevel + 9) } }))
     if (state.background.type === 'transparent' && canvasRef.current) {
@@ -71,8 +74,35 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
       })
     }
     try {
+      // html-to-image has to clone the live WebGL canvas. Safari can produce a
+      // transparent clone after a long or high-resolution GPU render, leaving
+      // every device absent from the export. Freeze the completed framebuffer
+      // into a regular image before DOM capture so the compositing step is
+      // deterministic across browsers.
+      webglCanvas = canvasRef.current?.querySelector('canvas') ?? null
+      if (webglCanvas?.parentElement) {
+        const frameUrl = webglCanvas.toDataURL('image/png')
+        frozenWebglFrame = document.createElement('img')
+        frozenWebglFrame.src = frameUrl
+        frozenWebglFrame.alt = ''
+        frozenWebglFrame.setAttribute('aria-hidden', 'true')
+        Object.assign(frozenWebglFrame.style, {
+          position: 'absolute',
+          inset: '0',
+          width: '100%',
+          height: '100%',
+          objectFit: 'fill',
+          pointerEvents: 'none',
+        })
+        await frozenWebglFrame.decode()
+        webglCanvas.parentElement.appendChild(frozenWebglFrame)
+        previousCanvasVisibility = webglCanvas.style.visibility
+        webglCanvas.style.visibility = 'hidden'
+      }
       return await capture()
     } finally {
+      frozenWebglFrame?.remove()
+      if (webglCanvas) webglCanvas.style.visibility = previousCanvasVisibility
       if (canvasRef.current) {
         canvasRef.current.className = previousClassName
         canvasRef.current.style.background = previousBackground
