@@ -43,8 +43,18 @@ function radialTransforms(input: Transform, settings: RadialLayoutSettings): Tra
     const degrees = settings.startAngle + settings.direction * angle * index / divisor
     const q = new THREE.Quaternion().setFromAxisAngle(axisVector(settings.axis), THREE.MathUtils.degToRad(degrees))
     const p = relative.clone().applyQuaternion(q).add(pivot)
-    const r = settings.orientation === 'follow' ? q.multiply(rotation(input)) : rotation(input)
-    return toTransform(p, r, input)
+    if (settings.orientation === 'follow') {
+      // Keep the radial-axis angle continuous. Quaternion -> Euler conversion
+      // represents 240deg as -120deg, which made instances appear to reverse
+      // after crossing 180deg even though their positions were correct.
+      const axisRotation = settings.axis === 'x'
+        ? { rotX: input.rotX + degrees }
+        : settings.axis === 'y'
+          ? { rotY: input.rotY + degrees }
+          : { rotZ: input.rotZ + degrees }
+      return { ...input, posX: p.x, posY: p.y, posZ: p.z, ...axisRotation }
+    }
+    return toTransform(p, rotation(input), input)
   })
 }
 
