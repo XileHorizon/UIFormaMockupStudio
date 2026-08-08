@@ -38,6 +38,8 @@ const LAYOUTS: { id: LayoutPattern; label: string; glyph: string }[] = [
   { id: 'staircase', label: 'Steps', glyph: '▁▃▅' },
   { id: 'grid', label: 'Grid', glyph: '▦' },
   { id: 'rainbow', label: 'Orbit', glyph: '◜ ◝' },
+  { id: 'mirror', label: 'Mirror', glyph: '◁ ▷' },
+  { id: 'ring', label: 'Ring', glyph: '○' },
 ]
 const RAINBOW_COLORS: DeviceColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink']
 
@@ -130,13 +132,15 @@ function ObjectRow({ obj, selected, index, total, onSelect, onRename, onToggleVi
 }
 
 export default function LeftSidebar() {
-  const { state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, updateObject, updateDevice, updateTransform, reorderObjects, applyLayout } = useEditor()
+  const { state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, updateObject, updateDevice, updateTransform, reorderObjects, applyLayout, applyLinkedLayout } = useEditor()
   const mediaRef = useRef<HTMLInputElement>(null)
   const [layout, setLayout] = useState<LayoutPattern>('fan')
   const [layoutSpacing, setLayoutSpacing] = useState(210)
   const [layoutDepth, setLayoutDepth] = useState(28)
   const [layoutCurve, setLayoutCurve] = useState(24)
   const [rainbowColors, setRainbowColors] = useState(true)
+  const [linkedCopies, setLinkedCopies] = useState(false)
+  const [copyCount, setCopyCount] = useState(8)
   const { objects, selectedId } = state
 
   const validObjects = objects.filter(o => o?.id && o?.transform && typeof o.transform.rotX === 'number')
@@ -193,8 +197,9 @@ export default function LeftSidebar() {
   const layoutTargets = validObjects.filter(o => o.visible && !o.locked && (o.elementType === 'device' || o.elementType == null))
 
   const applyCurrentLayout = () => {
-    applyLayout(layout, layoutSpacing, layoutDepth, layoutCurve)
-    if (rainbowColors) layoutTargets.forEach((o, index) => updateDevice(o.id, { color: RAINBOW_COLORS[index % RAINBOW_COLORS.length] }))
+    if (linkedCopies) applyLinkedLayout(layout, layoutSpacing, layoutDepth, layoutCurve, copyCount)
+    else applyLayout(layout, layoutSpacing, layoutDepth, layoutCurve)
+    if (rainbowColors && !linkedCopies) layoutTargets.forEach((o, index) => updateDevice(o.id, { color: RAINBOW_COLORS[index % RAINBOW_COLORS.length] }))
   }
 
   return (
@@ -240,9 +245,9 @@ export default function LeftSidebar() {
           ))}
         </div>
         {[
-          ['Spacing', layoutSpacing, setLayoutSpacing, 80, 420],
-          ['Depth', layoutDepth, setLayoutDepth, 0, 160],
-          ['Curve', layoutCurve, setLayoutCurve, 0, 80],
+          ['Spacing', layoutSpacing, setLayoutSpacing, 40, 1200],
+          ['Depth', layoutDepth, setLayoutDepth, 0, 600],
+          ['Curve', layoutCurve, setLayoutCurve, 0, 180],
         ].map(([label, value, setter, min, max]) => (
           <label key={label as string} style={{ display: 'grid', gridTemplateColumns: '48px 1fr 30px', alignItems: 'center', gap: 5, marginTop: 7, fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
             <span>{label as string}</span>
@@ -253,10 +258,16 @@ export default function LeftSidebar() {
         <label style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 9, fontSize: 10, color: 'var(--text-muted)', cursor: 'pointer' }}>
           <input type="checkbox" checked={rainbowColors} onChange={e => setRainbowColors(e.target.checked)} /> Rainbow device colors
         </label>
-        <button onClick={applyCurrentLayout} disabled={layoutTargets.length < 2} style={{ width: '100%', marginTop: 9, padding: '7px 8px', borderRadius: 6, border: 'none', background: layoutTargets.length >= 2 ? 'var(--accent)' : 'var(--surface-2)', color: layoutTargets.length >= 2 ? '#fff' : 'var(--text-dim)', cursor: layoutTargets.length >= 2 ? 'pointer' : 'default', fontSize: 10, fontWeight: 600 }}>
-          Arrange {layoutTargets.length} devices
+        <label style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 7, fontSize: 10, color: 'var(--text-muted)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={linkedCopies} onChange={e => setLinkedCopies(e.target.checked)} /> Linked copies from selected
+        </label>
+        {linkedCopies && <label style={{ display: 'grid', gridTemplateColumns: '48px 1fr 30px', alignItems: 'center', gap: 5, marginTop: 7, fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+          <span>Copies</span><input type="range" min={2} max={24} value={copyCount} onChange={e => setCopyCount(Number(e.target.value))} style={{ width: '100%' }} /><span style={{ textAlign: 'right', color: 'var(--text-muted)' }}>{copyCount}</span>
+        </label>}
+        <button onClick={applyCurrentLayout} disabled={linkedCopies ? !selIsDevice : layoutTargets.length < 2} style={{ width: '100%', marginTop: 9, padding: '7px 8px', borderRadius: 6, border: 'none', background: (linkedCopies ? selIsDevice : layoutTargets.length >= 2) ? 'var(--accent)' : 'var(--surface-2)', color: (linkedCopies ? selIsDevice : layoutTargets.length >= 2) ? '#fff' : 'var(--text-dim)', cursor: (linkedCopies ? selIsDevice : layoutTargets.length >= 2) ? 'pointer' : 'default', fontSize: 10, fontWeight: 600 }}>
+          {linkedCopies ? `Create ${copyCount} linked devices` : `Arrange ${layoutTargets.length} devices`}
         </button>
-        <div style={{ marginTop: 6, fontSize: 9, lineHeight: 1.35, color: 'var(--text-dim)' }}>Uses visible, unlocked devices. Screens and materials stay intact.</div>
+        <div style={{ marginTop: 6, fontSize: 9, lineHeight: 1.35, color: 'var(--text-dim)' }}>{linkedCopies ? 'Changing any linked device updates the model, material, and screen across the group.' : 'Uses visible, unlocked devices. Screens and materials stay intact.'}</div>
       </div>
 
       <Sep />

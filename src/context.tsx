@@ -26,6 +26,7 @@ export interface EditorContextValue {
   alignObjects: (axis: 'horizontal' | 'vertical') => void
   distributeObjects: (axis: 'horizontal' | 'vertical') => void
   applyLayout: (pattern: LayoutPattern, spacing: number, depth: number, curve: number) => void
+  applyLinkedLayout: (pattern: LayoutPattern, spacing: number, depth: number, curve: number, count: number) => void
 }
 
 export const EditorContext = createContext<EditorContextValue | null>(null)

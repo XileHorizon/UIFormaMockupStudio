@@ -88,9 +88,16 @@ type Action =
   | { type: 'ALIGN_OBJECTS'; payload: { axis: 'horizontal' | 'vertical' } }
   | { type: 'DISTRIBUTE_OBJECTS'; payload: { axis: 'horizontal' | 'vertical' } }
   | { type: 'APPLY_LAYOUT'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number } }
+  | { type: 'APPLY_LINKED_LAYOUT'; payload: { pattern: LayoutPattern; spacing: number; depth: number; curve: number; count: number } }
 
 function updateObj(objects: SceneObject[], id: string, up: (o: SceneObject) => SceneObject): SceneObject[] {
   return objects.map(o => (o.id === id ? up(o) : o))
+}
+
+function linkedIds(objects: SceneObject[], id: string): Set<string> {
+  const source = objects.find(o => o.id === id)
+  if (!source?.linkedGroupId) return new Set([id])
+  return new Set(objects.filter(o => o.linkedGroupId === source.linkedGroupId).map(o => o.id))
 }
 
 function offsetForNew(objects: SceneObject[]): Partial<Transform> {
@@ -154,10 +161,18 @@ function reducer(state: AppState, action: Action): AppState {
       const idx = state.objects.findIndex(o => o.id === action.payload.id)
       return { ...state, objects: [...state.objects.slice(0, idx + 1), copy, ...state.objects.slice(idx + 1)], selectedId: copy.id }
     }
-    case 'UPDATE_OBJECT':
-      return { ...state, objects: updateObj(state.objects, action.payload.id, o => ({ ...o, ...action.payload.changes })) }
-    case 'UPDATE_OBJECT_DEVICE':
-      return { ...state, objects: updateObj(state.objects, action.payload.id, o => ({ ...o, device: { ...o.device, ...action.payload.changes } })) }
+    case 'UPDATE_OBJECT': {
+      const ids = linkedIds(state.objects, action.payload.id)
+      // Screen/media edits synchronize; structural and per-copy fields remain local.
+      const shared = Object.fromEntries(Object.entries(action.payload.changes).filter(([key]) => ['screenshot', 'screenshotType'].includes(key)))
+      return { ...state, objects: state.objects.map(o => o.id === action.payload.id
+        ? { ...o, ...action.payload.changes }
+        : ids.has(o.id) ? { ...o, ...shared } : o) }
+    }
+    case 'UPDATE_OBJECT_DEVICE': {
+      const ids = linkedIds(state.objects, action.payload.id)
+      return { ...state, objects: state.objects.map(o => ids.has(o.id) ? { ...o, device: { ...o.device, ...action.payload.changes } } : o) }
+    }
     case 'UPDATE_OBJECT_TRANSFORM':
       return { ...state, objects: updateObj(state.objects, action.payload.id, o => ({ ...o, transform: { ...o.transform, ...action.payload.changes } })) }
     case 'UPDATE_OBJECT_TEXT':
@@ -243,10 +258,36 @@ function reducer(state: AppState, action: Action): AppState {
         } else if (pattern === 'rainbow') {
           const angle = targets.length === 1 ? 0 : (index / (targets.length - 1) - 0.5) * Math.PI * 0.9
           next = { posX: Math.sin(angle) * spacing * Math.max(1.5, targets.length * 0.42), posY: (1 - Math.cos(angle)) * curve * 1.5, posZ: -Math.abs(offset) * depth, rotY: angle * 32, rotZ: angle * 18 }
+        } else if (pattern === 'mirror') {
+          const side = index % 2 === 0 ? -1 : 1
+          const tier = Math.floor(index / 2) + 0.5
+          next = { posX: side * tier * spacing, posY: Math.floor(index / 2) * curve, posZ: -Math.floor(index / 2) * depth, rotY: side * Math.min(70, curve), rotZ: side * curve * 0.18 }
+        } else if (pattern === 'ring') {
+          const angle = (index / targets.length) * Math.PI * 2 - Math.PI / 2
+          const radius = spacing * Math.max(1, targets.length / 5)
+          next = { posX: Math.cos(angle) * radius, posY: Math.sin(angle) * radius, posZ: Math.sin(angle) * depth, rotY: (angle * 180 / Math.PI) + 90, rotZ: (angle * 180 / Math.PI) + 90 }
         }
         transforms.set(object.id, next)
       })
       return { ...state, objects: state.objects.map(o => ids.has(o.id) ? { ...o, transform: { ...o.transform, ...transforms.get(o.id)! } } : o) }
+    }
+    case 'APPLY_LINKED_LAYOUT': {
+      const source = state.objects.find(o => o.id === state.selectedId && (o.elementType === 'device' || o.elementType == null))
+      if (!source) return state
+      const count = Math.max(2, Math.min(32, action.payload.count))
+      const groupId = source.linkedGroupId ?? genId()
+      const retained = state.objects.filter(o => o.linkedGroupId !== groupId || o.id === source.id)
+      const copies: SceneObject[] = Array.from({ length: count }, (_, index) => ({
+        ...source,
+        id: index === 0 ? source.id : genId(),
+        name: index === 0 ? source.name : `${source.name} ${index + 1}`,
+        device: { ...source.device },
+        transform: { ...source.transform },
+        linkedGroupId: groupId,
+        linkedIndex: index,
+      }))
+      const temporary = { ...state, objects: [...retained.filter(o => o.id !== source.id), ...copies], selectedId: source.id }
+      return reducer(temporary, { type: 'APPLY_LAYOUT', payload: action.payload })
     }
     default:
       return state
@@ -313,9 +354,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const alignObjects = useCallback((axis: 'horizontal' | 'vertical') => dispatch({ type: 'ALIGN_OBJECTS', payload: { axis } }), [])
   const distributeObjects = useCallback((axis: 'horizontal' | 'vertical') => dispatch({ type: 'DISTRIBUTE_OBJECTS', payload: { axis } }), [])
   const applyLayout = useCallback((pattern: LayoutPattern, spacing: number, depth: number, curve: number) => dispatch({ type: 'APPLY_LAYOUT', payload: { pattern, spacing, depth, curve } }), [])
+  const applyLinkedLayout = useCallback((pattern: LayoutPattern, spacing: number, depth: number, curve: number, count: number) => dispatch({ type: 'APPLY_LINKED_LAYOUT', payload: { pattern, spacing, depth, curve, count } }), [])
 
   return (
-    <EditorContext.Provider value={{ state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, duplicateObject, updateObject, updateDevice, updateTransform, updateText, updateShape, reorderObjects, setBackground, setLighting, setTool, toggleExportModal, toggleTemplatesModal, loadTemplate, importProject, alignObjects, distributeObjects, applyLayout }}>
+    <EditorContext.Provider value={{ state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, duplicateObject, updateObject, updateDevice, updateTransform, updateText, updateShape, reorderObjects, setBackground, setLighting, setTool, toggleExportModal, toggleTemplatesModal, loadTemplate, importProject, alignObjects, distributeObjects, applyLayout, applyLinkedLayout }}>
       {children}
     </EditorContext.Provider>
   )

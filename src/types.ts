@@ -19,7 +19,7 @@ export type AnglePreset =
   | 'front' | 'slight-left' | 'slight-right' | 'top-down'
   | 'iso-left' | 'iso-right' | 'dramatic-low' | 'floating-quarter'
 
-export type LayoutPattern = 'line' | 'fan' | 'arc' | 'staircase' | 'grid' | 'rainbow'
+export type LayoutPattern = 'line' | 'fan' | 'arc' | 'staircase' | 'grid' | 'rainbow' | 'mirror' | 'ring'
 
 // ── Sub-configs ───────────────────────────────────────────────────────────────
 
@@ -109,6 +109,9 @@ export interface SceneObject {
   shapeConfig?: ShapeConfig
   visible: boolean
   locked: boolean
+  /** Members of a generated pattern share device and screen edits. */
+  linkedGroupId?: string
+  linkedIndex?: number
 }
 
 export interface AppState {
