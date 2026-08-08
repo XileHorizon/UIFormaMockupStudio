@@ -24,7 +24,7 @@ const BODY_COLORS = {
 
 export default function IPadPro3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/ipad-pro.glb', false, false)
-  const texture = useScreenTexture(screenshot, screenshotType)
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.801 / 2.355, flipY: false })
 
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = scene.clone(true)

@@ -26,7 +26,7 @@ const BODY_COLORS = {
 
 export default function IPhone17Pro3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const source = useLoader(OBJLoader, '/models/iphone-17-pro.obj')
-  const texture = useScreenTexture(screenshot, screenshotType)
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 0.817 / 2.39 })
 
   const model = useMemo(() => {
     const next = source.clone(true)

@@ -21,7 +21,7 @@ const BODY_COLORS = {
 
 export default function IMac2021ThreeD({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const source = useLoader(OBJLoader, '/models/imac-2021.obj')
-  const texture = useScreenTexture(screenshot, screenshotType)
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 16 / 9 })
 
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = source.clone(true)

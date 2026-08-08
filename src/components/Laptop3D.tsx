@@ -24,7 +24,7 @@ const BODY_COLORS = {
 
 export default function Laptop3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/laptop-3d.glb', false, false)
-  const screenTexture = useScreenTexture(screenshot, screenshotType)
+  const screenTexture = useScreenTexture(screenshot, screenshotType, { aspect: 16 / 9, flipY: false })
   const keyboardTexture = useTexture('/models/laptop-keyboard.png')
   keyboardTexture.colorSpace = THREE.SRGBColorSpace
   keyboardTexture.flipY = false

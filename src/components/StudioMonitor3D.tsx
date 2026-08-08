@@ -22,7 +22,38 @@ const BODY_COLORS = {
   orange: '#d97948',
 } as const
 
-export function useScreenTexture(source: string | null, type: ScreenContentType) {
+interface ScreenTextureOptions {
+  aspect?: number
+  flipY?: boolean
+}
+
+function fitTextureToScreen(texture: THREE.Texture, screenAspect: number, flipY: boolean) {
+  const image = texture.image as { width?: number; height?: number; videoWidth?: number; videoHeight?: number } | undefined
+  const width = image?.videoWidth || image?.width || 1
+  const height = image?.videoHeight || image?.height || 1
+  const imageAspect = width / height
+
+  texture.wrapS = THREE.ClampToEdgeWrapping
+  texture.wrapT = THREE.ClampToEdgeWrapping
+  texture.repeat.set(1, 1)
+  texture.offset.set(0, 0)
+
+  // Cover the display without distorting the uploaded image. Excess content is
+  // cropped evenly, matching the behavior users expect from device mockups.
+  if (imageAspect > screenAspect) {
+    texture.repeat.x = screenAspect / imageAspect
+    texture.offset.x = (1 - texture.repeat.x) / 2
+  } else if (imageAspect < screenAspect) {
+    texture.repeat.y = imageAspect / screenAspect
+    texture.offset.y = (1 - texture.repeat.y) / 2
+  }
+
+  texture.flipY = flipY
+  texture.needsUpdate = true
+}
+
+export function useScreenTexture(source: string | null, type: ScreenContentType, options: ScreenTextureOptions = {}) {
+  const { aspect = 16 / 9, flipY = true } = options
   const placeholder = useMemo(() => {
     const canvas = document.createElement('canvas')
     canvas.width = 1400
@@ -47,8 +78,9 @@ export function useScreenTexture(source: string | null, type: ScreenContentType)
     }
     const texture = new THREE.CanvasTexture(canvas)
     texture.colorSpace = THREE.SRGBColorSpace
+    fitTextureToScreen(texture, aspect, flipY)
     return texture
-  }, [])
+  }, [aspect, flipY])
 
   const [texture, setTexture] = useState<THREE.Texture>(placeholder)
 
@@ -67,6 +99,7 @@ export function useScreenTexture(source: string | null, type: ScreenContentType)
       void video.play()
       const next = new THREE.VideoTexture(video)
       next.colorSpace = THREE.SRGBColorSpace
+      video.addEventListener('loadedmetadata', () => fitTextureToScreen(next, aspect, flipY), { once: true })
       setTexture(next)
       return () => {
         video.pause()
@@ -79,16 +112,17 @@ export function useScreenTexture(source: string | null, type: ScreenContentType)
       if (!active) return next.dispose()
       next.colorSpace = THREE.SRGBColorSpace
       next.anisotropy = 8
+      fitTextureToScreen(next, aspect, flipY)
       setTexture(next)
     })
     return () => { active = false }
-  }, [placeholder, source, type])
+  }, [aspect, flipY, placeholder, source, type])
 
   return texture
 }
 
 export default function StudioMonitor3D({ device, transform, screenshot, screenshotType, lighting, selected, onSelect }: Props) {
-  const texture = useScreenTexture(screenshot, screenshotType)
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 5.59 / 3.22 })
   const body = BODY_COLORS[device.color]
   const roughness = device.materialPreset === 'matte' ? 0.78 : 0.32
   const metalness = device.materialPreset === 'glass' ? 0.25 : 0.82

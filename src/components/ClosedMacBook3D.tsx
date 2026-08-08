@@ -15,7 +15,7 @@ interface Props {
 
 export default function ClosedMacBook3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/macbook-open.glb', false, false)
-  const texture = useScreenTexture(screenshot, screenshotType)
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 5.72 / 3.72 })
 
   const model = useMemo(() => {
     const next = scene.clone(true)
