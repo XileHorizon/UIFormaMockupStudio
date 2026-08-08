@@ -3,6 +3,7 @@ import type { AppState, Transform, DeviceConfig, Background, LightingConfig, Sce
 import { createSceneObject, createTextObject, createShapeObject, genId, defaultTransform, TEMPLATES } from './types'
 import { EditorContext, type EditorContextValue } from './context.tsx'
 import { evaluateScene } from './layout-engine'
+import * as THREE from 'three'
 
 // ── Sanitizer ─────────────────────────────────────────────────────────────────
 
@@ -214,6 +215,57 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case 'UPDATE_OBJECT_TRANSFORM': {
       const source = state.objects.find(o => o.id === action.payload.id)
+      const selectedIds = state.selectedIds?.length ? state.selectedIds : state.selectedId ? [state.selectedId] : []
+      const selectedObjects = state.objects.filter(o => selectedIds.includes(o.id) && !o.locked)
+      const rotationKeys = ['rotX', 'rotY', 'rotZ'] as const
+      const isGroupRotation = selectedObjects.length > 1
+        && selectedIds.includes(action.payload.id)
+        && rotationKeys.some(key => typeof action.payload.changes[key] === 'number')
+
+      if (source && isGroupRotation) {
+        const center = selectedObjects.reduce(
+          (sum, object) => sum.add(new THREE.Vector3(object.transform.posX, object.transform.posY, object.transform.posZ)),
+          new THREE.Vector3(),
+        ).multiplyScalar(1 / selectedObjects.length)
+        const deltaEuler = new THREE.Euler(
+          THREE.MathUtils.degToRad((action.payload.changes.rotX ?? source.transform.rotX) - source.transform.rotX),
+          THREE.MathUtils.degToRad((action.payload.changes.rotY ?? source.transform.rotY) - source.transform.rotY),
+          THREE.MathUtils.degToRad((action.payload.changes.rotZ ?? source.transform.rotZ) - source.transform.rotZ),
+          'XYZ',
+        )
+        const deltaRotation = new THREE.Quaternion().setFromEuler(deltaEuler)
+        const selected = new Set(selectedObjects.map(object => object.id))
+
+        return {
+          ...state,
+          objects: state.objects.map(object => {
+            if (!selected.has(object.id)) return object
+            const position = new THREE.Vector3(object.transform.posX, object.transform.posY, object.transform.posZ)
+              .sub(center)
+              .applyQuaternion(deltaRotation)
+              .add(center)
+            const orientation = deltaRotation.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(
+              THREE.MathUtils.degToRad(object.transform.rotX),
+              THREE.MathUtils.degToRad(object.transform.rotY),
+              THREE.MathUtils.degToRad(object.transform.rotZ),
+              'XYZ',
+            )))
+            const angles = new THREE.Euler().setFromQuaternion(orientation, 'XYZ')
+            return {
+              ...object,
+              transform: {
+                ...object.transform,
+                posX: position.x,
+                posY: position.y,
+                posZ: position.z,
+                rotX: THREE.MathUtils.radToDeg(angles.x),
+                rotY: THREE.MathUtils.radToDeg(angles.y),
+                rotZ: THREE.MathUtils.radToDeg(angles.z),
+              },
+            }
+          }),
+        }
+      }
       if (!source?.linkedGroupId) {
         return { ...state, objects: updateObj(state.objects, action.payload.id, o => ({ ...o, transform: { ...o.transform, ...action.payload.changes } })) }
       }

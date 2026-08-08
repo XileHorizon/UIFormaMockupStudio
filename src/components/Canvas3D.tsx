@@ -456,6 +456,16 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
         {selectedId && state.activeTool !== 'select' && (() => {
           const selected = renderObjects.find(object => object.id === selectedId)
           if (!selected || selected.locked) return null
+          const selectedObjects = renderObjects.filter(object => selectedIds.includes(object.id) && !object.locked)
+          const gizmoObject = selectedObjects.length > 1 ? {
+            ...selected,
+            transform: {
+              ...selected.transform,
+              posX: selectedObjects.reduce((sum, object) => sum + object.transform.posX, 0) / selectedObjects.length,
+              posY: selectedObjects.reduce((sum, object) => sum + object.transform.posY, 0) / selectedObjects.length,
+              posZ: selectedObjects.reduce((sum, object) => sum + object.transform.posZ, 0) / selectedObjects.length,
+            },
+          } : selected
           const selectedBase = objects.find(object => object.id === selectedId)
           const offset = selectedBase?.patternTransform
           const rotatedPositionOffset = new THREE.Vector3(offset?.posX ?? 0, offset?.posY ?? 0, offset?.posZ ?? 0)
@@ -465,7 +475,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             THREE.MathUtils.degToRad(selectedBase.transform.rotZ),
             'XYZ',
           ))
-          return <TransformGizmo object={selected} tool={state.activeTool} onChange={changes => {
+          return <TransformGizmo object={gizmoObject} tool={state.activeTool} onChange={changes => {
             const baseChanges = { ...changes }
             if (typeof baseChanges.posX === 'number') baseChanges.posX -= rotatedPositionOffset.x
             if (typeof baseChanges.posY === 'number') baseChanges.posY -= rotatedPositionOffset.y
