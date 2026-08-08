@@ -168,9 +168,12 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
           background: 'var(--panel)',
           border: '1px solid var(--border)',
           borderRadius: 12,
-          width: 440,
+          width: 560,
+          maxWidth: 'calc(100vw - 32px)',
           maxHeight: '88vh',
           overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         {/* Header */}
@@ -187,7 +190,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
         </div>
 
         {/* Body */}
-        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', maxHeight: 'calc(88vh - 120px)' }}>
+        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', flex: 1, minHeight: 0, scrollbarGutter: 'stable' }}>
           {/* Format */}
           <div>
             <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
@@ -241,7 +244,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
               <span><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 2 }}>Ray tracing</strong>Experimental progressive GPU path tracing</span>
               <input type="checkbox" checked={rayTracing} onChange={event => setRayTracing(event.target.checked)} />
             </label>
-            {rayTracing && <>
+            {rayTracing && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, paddingBottom: 12, borderBottom: '1px solid var(--border-subtle)' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Samples</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{raySamples}</span></div>
                 <input type="range" min={8} max={512} step={8} value={raySamples} onChange={event => setRaySamples(Number(event.target.value))} style={{ width: '100%' }} />
@@ -254,21 +257,22 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Light bounces</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{rayBounces}</span></div>
                 <input type="range" min={1} max={12} step={1} value={rayBounces} onChange={event => setRayBounces(Number(event.target.value))} style={{ width: '100%' }} />
               </div>
-              <div style={{ fontSize: 9, color: 'var(--text-dim)', lineHeight: 1.45 }}>Traces the 3D devices, physical materials, lights, and HDR environment. HTML text and shapes are composited after the traced pass.</div>
-            </>}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>GPU supersampling</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{gpuDpr.toFixed(1)}×</span></div>
-              <input type="range" min={1} max={4} step={0.5} value={gpuDpr} onChange={event => setGpuDpr(Number(event.target.value))} style={{ width: '100%' }} />
-              <div style={{ fontSize: 9, color: 'var(--text-dim)', lineHeight: 1.4 }}>Raises the actual Three.js render resolution before capture. 4× can use substantial GPU memory.</div>
-            </div>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Shadow resolution</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{2 ** (shadowLevel + 9)}px</span></div>
-              <input type="range" min={1} max={3} step={1} value={shadowLevel} onChange={event => setShadowLevel(Number(event.target.value))} style={{ width: '100%' }} />
-            </div>
-            {format !== 'png' && <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Compression quality</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{quality}%</span></div>
-              <input type="range" min={50} max={100} step={1} value={quality} onChange={event => setQuality(Number(event.target.value))} style={{ width: '100%' }} />
             </div>}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>GPU supersampling</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{gpuDpr.toFixed(1)}×</span></div>
+                <input type="range" min={1} max={4} step={0.5} value={gpuDpr} onChange={event => setGpuDpr(Number(event.target.value))} style={{ width: '100%' }} />
+                <div style={{ fontSize: 9, color: 'var(--text-dim)', lineHeight: 1.4 }}>Raises the actual Three.js render resolution before capture. 4× can use substantial GPU memory.</div>
+              </div>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Shadow resolution</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{2 ** (shadowLevel + 9)}px</span></div>
+                <input type="range" min={1} max={3} step={1} value={shadowLevel} onChange={event => setShadowLevel(Number(event.target.value))} style={{ width: '100%' }} />
+              </div>
+              {format !== 'png' && <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Compression quality</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{quality}%</span></div>
+                <input type="range" min={50} max={100} step={1} value={quality} onChange={event => setQuality(Number(event.target.value))} style={{ width: '100%' }} />
+              </div>}
+            </div>
             <button onClick={() => { setScale(4); setGpuDpr(4); setShadowLevel(3); setQuality(100); setRaySamples(256); setReduceFireflies(true) }} style={{ padding: '7px 9px', borderRadius: 5, border: '1px solid var(--accent)', background: 'var(--accent-glow)', color: 'var(--accent)', cursor: 'pointer', fontSize: 10, fontWeight: 600 }}>Max GPU preset</button>
           </div>}
 
