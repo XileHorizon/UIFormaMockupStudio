@@ -16,11 +16,11 @@ function Material({ config, color = config.color }: { config: ShapeConfig; color
     transparent={transparent}
     opacity={config.opacity}
     depthWrite={config.opacity > 0.35}
-    metalness={0.12}
-    roughness={Math.min(0.9, 0.24 + config.blur / 60)}
-    clearcoat={0.35}
-    clearcoatRoughness={0.3}
-    envMapIntensity={0.7}
+    metalness={0.22}
+    roughness={Math.min(0.9, 0.4 + config.blur / 55)}
+    clearcoat={0.08}
+    clearcoatRoughness={0.5}
+    envMapIntensity={0.55}
   />
 }
 
@@ -33,10 +33,11 @@ function SelectionBox({ size }: { size: [number, number, number] }) {
 }
 
 export default function Shape3D({ config, transform, selected, onSelect }: Props) {
-  const width = Math.max(0.4, config.width / 75)
-  const height = Math.max(0.4, config.height / 75)
-  const depth = Math.max(0.08, Math.min(width, height) * (config.shape === 'plane' ? 0.035 : 0.12))
-  const radius = Math.max(0.01, Math.min(config.borderRadius / 75, Math.min(width, height) * 0.45))
+  const width = Math.max(0.36, config.width / 96)
+  const height = Math.max(0.36, config.height / 96)
+  const shortSide = Math.min(width, height)
+  const depth = Math.max(0.045, shortSide * (config.shape === 'plane' ? 0.018 : 0.055))
+  const radius = Math.max(0.008, Math.min(config.borderRadius / 120, shortSide * 0.16))
   const scale: [number, number, number] = [
     transform.scale * (transform.scaleX ?? 1),
     transform.scale * (transform.scaleY ?? 1),
@@ -57,50 +58,46 @@ export default function Shape3D({ config, transform, selected, onSelect }: Props
       <RoundedBox args={[width, height, depth]} radius={radius} smoothness={6} castShadow={config.showShadow} receiveShadow>
         <Material config={config} />
       </RoundedBox>
-      <RoundedBox args={[width * 0.92, height * 0.9, depth * 0.18]} radius={radius * 0.8} smoothness={5} position={[0, 0, depth * 0.55]}>
+      <RoundedBox args={[width * 0.94, height * 0.9, Math.max(0.012, depth * 0.08)]} radius={radius * 0.58} smoothness={4} position={[0, 0, depth * 0.52]}>
         <Material config={config} color={config.secondaryColor} />
       </RoundedBox>
-      {selected && <SelectionBox size={[width * 1.04, height * 1.04, depth * 1.5]} />}
+      {selected && <SelectionBox size={[width * 1.025, height * 1.025, depth * 1.35]} />}
     </>}
 
     {config.shape === 'ring' && <>
       <mesh castShadow={config.showShadow} receiveShadow>
-        <torusGeometry args={[Math.max(width, height) * 0.38, Math.max(width, height) * 0.095, 24, 96]} />
+        <torusGeometry args={[Math.min(width, height) * 0.39, Math.min(width, height) * 0.048, 16, 96]} />
         <Material config={config} />
       </mesh>
-      <mesh rotation={[0, 0, Math.PI]}>
-        <torusGeometry args={[Math.max(width, height) * 0.38, Math.max(width, height) * 0.055, 18, 96, Math.PI]} />
+      <mesh position={[0, 0, shortSide * 0.047]}>
+        <torusGeometry args={[shortSide * 0.39, shortSide * 0.012, 10, 96]} />
         <Material config={config} color={config.secondaryColor} />
       </mesh>
-      {selected && <SelectionBox size={[Math.max(width, height), Math.max(width, height), Math.max(width, height) * 0.22]} />}
+      {selected && <SelectionBox size={[shortSide * 0.92, shortSide * 0.92, shortSide * 0.13]} />}
     </>}
 
     {config.shape === 'blob' && <>
-      <mesh scale={[width * 0.52, height * 0.5, Math.min(width, height) * 0.34]} rotation={[0.18, -0.25, 0.12]} castShadow={config.showShadow} receiveShadow>
-        <icosahedronGeometry args={[1, 5]} />
+      <mesh scale={[shortSide * 0.44, shortSide * 0.4, shortSide * 0.15]} rotation={[0.1, -0.16, 0.08]} castShadow={config.showShadow} receiveShadow>
+        <icosahedronGeometry args={[1, 2]} />
         <Material config={config} />
       </mesh>
-      <mesh position={[-width * 0.12, height * 0.08, Math.min(width, height) * 0.23]} scale={[width * 0.24, height * 0.21, Math.min(width, height) * 0.08]}>
-        <sphereGeometry args={[1, 40, 24]} />
-        <Material config={config} color={config.secondaryColor} />
-      </mesh>
-      {selected && <SelectionBox size={[width * 1.08, height * 1.08, Math.min(width, height) * 0.8]} />}
+      {selected && <SelectionBox size={[shortSide * 0.94, shortSide * 0.86, shortSide * 0.38]} />}
     </>}
 
     {config.shape === 'pedestal' && <>
-      <mesh position={[0, -height * 0.08, 0]} castShadow={config.showShadow} receiveShadow>
-        <cylinderGeometry args={[width * 0.22, width * 0.29, height * 0.72, 64]} />
+      <mesh castShadow={config.showShadow} receiveShadow>
+        <cylinderGeometry args={[width * 0.32, width * 0.34, height * 0.34, 64]} />
         <Material config={config} />
       </mesh>
-      <mesh position={[0, height * 0.32, 0]} castShadow={config.showShadow} receiveShadow>
-        <cylinderGeometry args={[width * 0.38, width * 0.32, height * 0.12, 64]} />
+      <mesh position={[0, height * 0.185, 0]} castShadow={config.showShadow} receiveShadow>
+        <cylinderGeometry args={[width * 0.36, width * 0.36, height * 0.03, 64]} />
         <Material config={config} color={config.secondaryColor} />
       </mesh>
-      <mesh position={[0, -height * 0.49, 0]} castShadow={config.showShadow} receiveShadow>
-        <cylinderGeometry args={[width * 0.5, width * 0.42, height * 0.12, 64]} />
+      <mesh position={[0, -height * 0.185, 0]} castShadow={config.showShadow} receiveShadow>
+        <cylinderGeometry args={[width * 0.34, width * 0.34, height * 0.03, 64]} />
         <Material config={config} color={config.secondaryColor} />
       </mesh>
-      {selected && <SelectionBox size={[width * 1.04, height * 1.04, width * 1.04]} />}
+      {selected && <SelectionBox size={[width * 0.76, height * 0.44, width * 0.76]} />}
     </>}
 
     {config.shape === 'plane' && <>
@@ -108,10 +105,10 @@ export default function Shape3D({ config, transform, selected, onSelect }: Props
         <Material config={config} />
       </RoundedBox>
       <mesh position={[0, 0, depth * 0.52]}>
-        <planeGeometry args={[width * 0.94, height * 0.94]} />
+        <planeGeometry args={[width * 0.965, height * 0.945]} />
         <Material config={config} color={config.secondaryColor} />
       </mesh>
-      {selected && <SelectionBox size={[width * 1.04, height * 1.04, depth * 1.8]} />}
+      {selected && <SelectionBox size={[width * 1.025, height * 1.025, depth * 1.6]} />}
     </>}
   </group>
 }

@@ -310,13 +310,21 @@ export function defaultTextConfig(): TextConfig {
 }
 
 export function defaultShapeConfig(shape: ShapeType = 'card'): ShapeConfig {
+  const dimensions: Record<ShapeType, { width: number; height: number; borderRadius: number }> = {
+    card: { width: 240, height: 148, borderRadius: 14 },
+    ring: { width: 180, height: 180, borderRadius: 0 },
+    blob: { width: 210, height: 170, borderRadius: 0 },
+    pedestal: { width: 190, height: 220, borderRadius: 0 },
+    plane: { width: 240, height: 150, borderRadius: 10 },
+  }
+  const size = dimensions[shape]
   return {
     shape,
     color: '#1a1b2e',
     secondaryColor: '#2a2b4e',
-    width: 300,
-    height: 200,
-    borderRadius: 24,
+    width: size.width,
+    height: size.height,
+    borderRadius: size.borderRadius,
     opacity: 1,
     blur: 0,
     showShadow: true,
