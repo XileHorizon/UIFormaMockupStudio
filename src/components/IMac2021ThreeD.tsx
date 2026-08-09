@@ -1,4 +1,4 @@
-import { Edges, RoundedBox } from '@react-three/drei'
+import { Edges } from '@react-three/drei'
 import { useLoader } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
@@ -28,10 +28,6 @@ export default function IMac2021ThreeD({ device, transform, screenshot, screensh
       child.castShadow = true
       child.receiveShadow = true
       child.frustumCulled = false
-      if (/^Mesh[123]\b/.test(child.name)) {
-        child.visible = false
-        return
-      }
       const materials = Array.isArray(child.material) ? child.material : [child.material]
       const nextMaterials = materials.map(sourceMaterial => {
         const name = sourceMaterial.name.toLowerCase()
@@ -81,12 +77,6 @@ export default function IMac2021ThreeD({ device, transform, screenshot, screensh
       <group scale={normalizedScale} position={[-center.x * normalizedScale, -center.y * normalizedScale, -center.z * normalizedScale]}>
         <primitive object={model} dispose={null} />
       </group>
-      <RoundedBox args={[0.58, 1.45, 0.24]} radius={0.06} smoothness={4} position={[0, -1.78, -0.12]} castShadow>
-        <meshPhysicalMaterial color={DEVICE_BODY_COLORS[device.color]} metalness={0.76} roughness={0.4} clearcoat={0.06} envMapIntensity={0.5} />
-      </RoundedBox>
-      <RoundedBox args={[2.55, 0.14, 1.02]} radius={0.09} smoothness={5} position={[0, -2.46, 0.16]} castShadow receiveShadow>
-        <meshPhysicalMaterial color={DEVICE_BODY_COLORS[device.color]} metalness={0.76} roughness={0.42} clearcoat={0.06} envMapIntensity={0.5} />
-      </RoundedBox>
       {selected && (
         <mesh>
           <boxGeometry args={[size.x * normalizedScale * 1.03, size.y * normalizedScale * 1.03, size.z * normalizedScale * 1.08]} />

@@ -15,23 +15,34 @@ export function sanitizeObjects(objects: SceneObject[]): SceneObject[] {
     if (et === 'text') return o.transform && typeof o.transform.rotX === 'number'
     if (et === 'shape') return o.transform && typeof o.transform.rotX === 'number'
     return false
-  }).map(o => ({
+  }).map(o => {
+    const legacyType = o.device?.type as string | undefined
+    const migratedType: DeviceType = legacyType === 'phone'
+      ? 'iphone-17-pro'
+      : legacyType === 'tablet'
+        ? 'ipad-pro'
+        : legacyType === 'laptop' || legacyType === 'browser' || legacyType === 'monitor' || legacyType === 'studio-display'
+          ? 'macbook-air'
+          : (legacyType as DeviceType) ?? 'macbook-air'
+    return ({
     ...o,
     transform: { ...o.transform, posZ: o.transform.posZ ?? 0 },
     elementType: o.elementType ?? 'device',
     screenshotType: o.screenshotType ?? null,
     device: {
-      ...(o.device ?? { type: 'phone', color: 'space-black', orientation: 'portrait', showShadow: true, showReflection: true, screenBrightness: 1, materialPreset: 'default' }),
+      ...(o.device ?? { type: 'macbook-air', color: 'space-black', orientation: 'portrait', showShadow: true, showReflection: true, screenBrightness: 1, materialPreset: 'default' }),
+      type: migratedType,
       screenOffsetX: o.device?.screenOffsetX ?? 0,
       screenOffsetY: o.device?.screenOffsetY ?? 0,
       screenScale: o.device?.screenScale ?? 1,
     },
-  }))
+    })
+  })
 }
 
 // ── Initial state ─────────────────────────────────────────────────────────────
 
-const initialObject = createSceneObject('monitor', 'Studio Monitor 1', { rotX: -3, rotY: 12, rotZ: 0, scale: 1.08 })
+const initialObject = createSceneObject('macbook-air', 'MacBook Air 1', { rotX: -8, rotY: 18, rotZ: 0, scale: 0.92 })
 
 const initialState: AppState = {
   objects: [initialObject],
@@ -126,7 +137,6 @@ function offsetForNew(objects: SceneObject[]): Partial<Transform> {
 }
 
 const DEVICE_NAMES: Partial<Record<DeviceType, string>> = {
-  'studio-display': 'Studio Display',
   'macbook-air': 'MacBook Air',
   'iphone-17-pro': 'iPhone 17 Pro',
   'ipad-pro': 'iPad Pro',
@@ -278,7 +288,7 @@ function reducer(state: AppState, action: Action): AppState {
       const deltas = new Map<keyof Transform, number>()
       linearKeys.forEach(key => {
         const value = action.payload.changes[key]
-        if (typeof value === 'number') deltas.set(key, value - source.transform[key])
+        if (typeof value === 'number') deltas.set(key, value - (source!.transform[key] ?? 0))
       })
       const scaleRatio = typeof action.payload.changes.scale === 'number' && source.transform.scale !== 0
         ? action.payload.changes.scale / source.transform.scale

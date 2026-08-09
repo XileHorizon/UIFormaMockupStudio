@@ -27,7 +27,6 @@ const screenImages = {
   "laptop-3d": testImage(2560, 1600, "LAPTOP"),
   "imac-2021": testImage(2560, 1440, "IMAC"),
   "macbook-air": testImage(2560, 1680, "MACBOOK"),
-  "studio-display": testImage(2560, 1475, "DISPLAY"),
 };
 
 const deviceNames = {
@@ -36,7 +35,6 @@ const deviceNames = {
   "laptop-3d": "Laptop 3D",
   "imac-2021": "iMac 2021",
   "macbook-air": "MacBook",
-  "studio-display": "Studio Display",
 };
 
 const device = (type, transform = {}, index = 0) => ({
@@ -84,7 +82,7 @@ const compositionScenes = [
     device("laptop-3d", { posX: 120, posY: 165, scale: 0.46 }, 2),
     device("imac-2021", { posX: 365, posY: 120, scale: 0.45 }, 3),
     device("macbook-air", { posX: -120, posY: -190, scale: 0.45 }, 4),
-    device("studio-display", { posX: 235, posY: -185, scale: 0.43 }, 5),
+    device("macbook-air", { posX: 235, posY: -185, scale: 0.43 }, 5),
   ] },
 ];
 

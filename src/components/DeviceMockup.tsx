@@ -256,6 +256,7 @@ function MonitorMockup({ device, screenshot, screenshotType, lighting }: Omit<Pr
 // ── Root export ────────────────────────────────────────────────────────────────
 
 export default function DeviceMockup({ device, transform, screenshot, screenshotType, lighting }: Props) {
+  const legacyType = device.type as string
   const neonShadow = device.materialPreset === 'neon'
     ? `drop-shadow(0 0 20px rgba(100,120,255,0.7)) drop-shadow(0 0 40px rgba(100,120,255,0.4))`
     : ''
@@ -279,11 +280,11 @@ export default function DeviceMockup({ device, transform, screenshot, screenshot
   return (
     <div style={transformStyle}>
       <div style={lightingStyle}>
-        {device.type === 'phone'   && <PhoneMockup   device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
-        {device.type === 'laptop'  && <LaptopMockup  device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
-        {device.type === 'tablet'  && <TabletMockup  device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
-        {device.type === 'browser' && <BrowserMockup device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
-        {device.type === 'monitor' && <MonitorMockup device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
+        {legacyType === 'phone'   && <PhoneMockup   device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
+        {legacyType === 'laptop'  && <LaptopMockup  device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
+        {legacyType === 'tablet'  && <TabletMockup  device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
+        {legacyType === 'browser' && <BrowserMockup device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
+        {legacyType === 'monitor' && <MonitorMockup device={device} screenshot={screenshot} screenshotType={screenshotType} lighting={lighting} />}
       </div>
     </div>
   )

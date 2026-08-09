@@ -168,7 +168,7 @@ export default function RightSidebar() {
                       {DEVICE_COLOR_OPTIONS.map(c => <ColorSwatch key={c.id} color={c.swatch} title={c.label} selected={d.color === c.id} onClick={() => updateDevice(selId!, { color: c.id })} />)}
                     </div>
                   </Row>
-                  {d.type === 'tablet' && (
+                  {d.type === 'ipad-pro' && (
                     <Row label="Orientation">
                       <ChipRow options={[{ id: 'portrait', label: 'Port' }, { id: 'landscape', label: 'Land' }]} value={d.orientation} onChange={v => updateDevice(selId!, { orientation: v })} />
                     </Row>

@@ -4,8 +4,6 @@ import { ContactShadows, Environment, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { evaluateScene } from '../layout-engine'
 import { useEditor } from '../store'
-import DeviceMockup from './DeviceMockup'
-import StudioMonitor3D from './StudioMonitor3D'
 import ClosedMacBook3D from './ClosedMacBook3D'
 import IPhone17Pro3D from './IPhone17Pro3D'
 import IPadPro3D from './IPadPro3D'
@@ -359,17 +357,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                 environmentIntensity={lighting.environmentIntensity ?? 0.26}
                 environmentRotation={[0, THREE.MathUtils.degToRad(lighting.environmentRotation ?? -26), 0]}
               />
-              {renderObjects.map(obj => obj.visible && obj.elementType === 'device' && (obj.device?.type === 'monitor' || obj.device?.type === 'studio-display') ? (
-                <StudioMonitor3D
-                  key={obj.id}
-                  device={obj.device}
-                  transform={obj.transform}
-                  screenshot={obj.screenshot}
-                  screenshotType={obj.screenshotType}
-                  selected={obj.id === selectedId}
-                  onSelect={() => selectObject(obj.id)}
-                />
-              ) : obj.visible && obj.elementType === 'device' && obj.device?.type === 'macbook-air' ? (
+              {renderObjects.map(obj => obj.visible && obj.elementType === 'device' && obj.device?.type === 'macbook-air' ? (
                 <ClosedMacBook3D
                   key={obj.id}
                   device={obj.device}
@@ -475,7 +463,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             if (!obj.transform || typeof obj.transform.rotX !== 'number') return null
             const isSelected = selectedIds.includes(obj.id)
             const et = obj.elementType ?? 'device'
-            if (et === 'device' && ['monitor', 'studio-display', 'macbook-air', 'iphone-17-pro', 'ipad-pro', 'laptop-3d', 'imac-2021'].includes(obj.device?.type)) return null
+            if (et === 'device') return null
 
             return (
               <div
@@ -500,11 +488,8 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                 )}
 
                 {/* 3D perspective container for device + shape */}
-                {(et === 'device' || et === 'shape') ? (
+                {et === 'shape' ? (
                   <div style={{ perspective: '1200px', perspectiveOrigin: '50% 50%' }}>
-                    {et === 'device' && obj.device?.type && (
-                      <DeviceMockup device={obj.device} transform={obj.transform} screenshot={obj.screenshot} screenshotType={obj.screenshotType} lighting={lighting} />
-                    )}
                     {et === 'shape' && obj.shapeConfig && (
                       <ShapeElement config={obj.shapeConfig} transform={obj.transform} />
                     )}

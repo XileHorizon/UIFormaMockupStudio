@@ -1,7 +1,8 @@
 // ── Element types ─────────────────────────────────────────────────────────────
 
 export type ElementType = 'device' | 'text' | 'shape'
-export type DeviceType = 'phone' | 'iphone-17-pro' | 'laptop' | 'laptop-3d' | 'tablet' | 'ipad-pro' | 'monitor' | 'studio-display' | 'imac-2021' | 'macbook-air' | 'browser'
+export type DeviceType = 'iphone-17-pro' | 'laptop-3d' | 'ipad-pro' | 'imac-2021' | 'macbook-air'
+type LegacyDeviceType = 'phone' | 'laptop' | 'tablet' | 'monitor' | 'studio-display' | 'browser'
 export type DeviceColor = 'midnight' | 'space-black' | 'graphite' | 'silver' | 'starlight' | 'gold' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink'
 export type ShapeType = 'card' | 'ring' | 'blob' | 'pedestal' | 'plane'
 export type ScreenContentType = 'image' | 'video' | 'gif' | null
@@ -255,7 +256,14 @@ export function defaultTransform(overrides?: Partial<Transform>): Transform {
   return { rotX: -12, rotY: 24, rotZ: 3, posX: 0, posY: 0, posZ: 0, scale: 1, ...overrides }
 }
 
-export function defaultDevice(type: DeviceType = 'phone'): DeviceConfig {
+export function defaultDevice(requestedType: DeviceType | LegacyDeviceType = 'macbook-air'): DeviceConfig {
+  const type: DeviceType = requestedType === 'phone'
+    ? 'iphone-17-pro'
+    : requestedType === 'tablet'
+      ? 'ipad-pro'
+      : requestedType === 'laptop' || requestedType === 'browser' || requestedType === 'monitor' || requestedType === 'studio-display'
+        ? 'macbook-air'
+        : requestedType
   return {
     type,
     color: type === 'imac-2021' ? 'blue' : 'space-black',
