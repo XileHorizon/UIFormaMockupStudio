@@ -36,7 +36,10 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
         const name = sourceMaterial.name.toLowerCase()
         let material: THREE.Material
         if (name === 'display') {
-          material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false, color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness), side: THREE.DoubleSide })
+          // The imported Display mesh includes the thin extruded edge around the
+          // glass. Keep that edge dark and place the screen texture on a separate
+          // front surface below so the image cannot wrap around the extrusion.
+          material = new THREE.MeshStandardMaterial({ color: '#050609', roughness: 0.5, metalness: 0.02, side: THREE.DoubleSide })
         } else if (name.includes('dynamic')) {
           material = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
         } else if (name.includes('display_borders') || name.includes('warnex') || name.includes('side_dark') || name.includes('mesh_grill')) {
@@ -84,6 +87,13 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
       <group scale={normalizedScale} position={[-center.x * normalizedScale, -center.y * normalizedScale, -center.z * normalizedScale]}>
         <primitive object={model} dispose={null} />
       </group>
+      <RoundedBox args={[2.02, 4.24, 0.004]} radius={0.17} smoothness={5} position={[0, 0, 0.199]}>
+        <meshBasicMaterial
+          map={texture}
+          toneMapped={false}
+          color={new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness)}
+        />
+      </RoundedBox>
       <RoundedBox args={[0.66, 0.19, 0.035]} radius={0.09} smoothness={4} position={[-0.018, 1.987, 0.205]}>
         <meshBasicMaterial color="#050609" />
       </RoundedBox>
