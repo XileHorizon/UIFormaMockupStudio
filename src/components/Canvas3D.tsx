@@ -437,6 +437,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                   onSelect={() => selectObject(obj.id)}
                   targetSize={4.4}
                   modelRotation={[0, Math.PI / 2, 0]}
+                  appearance="game-boy"
                 />
               ) : obj.visible && obj.elementType === 'shape' && obj.shapeConfig ? (
                 <Shape3D

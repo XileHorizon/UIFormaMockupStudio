@@ -11,7 +11,7 @@ interface Props {
   onSelect: () => void
   targetSize?: number
   modelRotation?: [number, number, number]
-  appearance?: 'original' | 'switch'
+  appearance?: 'original' | 'switch' | 'game-boy'
   device: DeviceConfig
   screenshot: string | null
   screenshotType: ScreenContentType
@@ -121,6 +121,27 @@ export default function ImportedGLBDevice({
         material.name = 'Screen glass'
         ownedMaterials.push(material)
         child.material = material
+      } else if (appearance === 'game-boy') {
+        // The source Game Boy asset marks every opaque material as double-sided.
+        // That renders acceptably in the realtime preview but produces nearly
+        // black back-face shading in the GPU path tracer. Rebuild those simple
+        // color materials as single-sided physical materials so both renderers
+        // use the same surface normals and lighting response.
+        const sources = Array.isArray(child.material) ? child.material : [child.material]
+        const materials = sources.map(source => {
+          const sourceMaterial = source as THREE.MeshStandardMaterial
+          const material = new THREE.MeshPhysicalMaterial({
+            color: sourceMaterial.color?.clone() ?? new THREE.Color('#8f8f8f'),
+            metalness: sourceMaterial.metalness ?? 0,
+            roughness: Math.max(0.32, sourceMaterial.roughness ?? 0.62),
+            side: THREE.FrontSide,
+            envMapIntensity: 0.72,
+          })
+          material.name = source.name
+          ownedMaterials.push(material)
+          return material
+        })
+        child.material = Array.isArray(child.material) ? materials : materials[0]
       }
     })
     next.updateMatrixWorld(true)
@@ -139,7 +160,7 @@ export default function ImportedGLBDevice({
       if (!(child instanceof THREE.Mesh)) return
       const materials = Array.isArray(child.material) ? child.material : [child.material]
       for (const material of materials) {
-        if (appearance === 'switch' || child.name.toUpperCase() === 'SCREEN' || child.name.toUpperCase() === 'GLASS') material.dispose()
+        if (appearance !== 'original' || child.name.toUpperCase() === 'SCREEN' || child.name.toUpperCase() === 'GLASS') material.dispose()
       }
       if (child.geometry.userData.importedScreenOwned) child.geometry.dispose()
     })
