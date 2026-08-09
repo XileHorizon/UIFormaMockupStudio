@@ -1,7 +1,7 @@
 // ── Element types ─────────────────────────────────────────────────────────────
 
 export type ElementType = 'device' | 'text' | 'shape'
-export type DeviceType = 'iphone-17-pro' | 'laptop-3d' | 'ipad-pro' | 'imac-2021' | 'macbook-air'
+export type DeviceType = 'iphone-17-pro' | 'laptop-3d' | 'ipad-pro' | 'imac-2021' | 'macbook-air' | 'nintendo-switch' | 'game-boy'
 type LegacyDeviceType = 'phone' | 'laptop' | 'tablet' | 'monitor' | 'studio-display' | 'browser'
 export type DeviceColor = 'midnight' | 'space-black' | 'graphite' | 'silver' | 'starlight' | 'gold' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink'
 export type ShapeType = 'card' | 'ring' | 'blob' | 'pedestal' | 'plane'

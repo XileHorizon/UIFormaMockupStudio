@@ -142,6 +142,8 @@ const DEVICE_NAMES: Partial<Record<DeviceType, string>> = {
   'ipad-pro': 'iPad Pro',
   'laptop-3d': 'Laptop 3D',
   'imac-2021': 'iMac 2021',
+  'nintendo-switch': 'Nintendo Switch',
+  'game-boy': 'Game Boy',
 }
 
 // ── Reducer ───────────────────────────────────────────────────────────────────

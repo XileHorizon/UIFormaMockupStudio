@@ -9,6 +9,7 @@ import IPhone17Pro3D from './IPhone17Pro3D'
 import IPadPro3D from './IPadPro3D'
 import Laptop3D from './Laptop3D'
 import IMac2021ThreeD from './IMac2021ThreeD'
+import ImportedGLBDevice from './ImportedGLBDevice'
 import TextElement from './TextElement'
 import Shape3D from './Shape3D'
 import type { SceneObject } from '../types'
@@ -406,6 +407,36 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                   screenshotType={obj.screenshotType}
                   selected={obj.id === selectedId}
                   onSelect={() => selectObject(obj.id)}
+                />
+              ) : obj.visible && obj.elementType === 'device' && obj.device?.type === 'nintendo-switch' ? (
+                <ImportedGLBDevice
+                  key={obj.id}
+                  assetPath="/models/nintendo-switch.glb"
+                  device={obj.device}
+                  transform={obj.transform}
+                  screenshot={obj.screenshot}
+                  screenshotType={obj.screenshotType}
+                  screenAspect={16 / 9}
+                  selected={obj.id === selectedId}
+                  onSelect={() => selectObject(obj.id)}
+                  targetSize={5.2}
+                  modelRotation={[0, -Math.PI / 2, 0]}
+                  appearance="switch"
+                />
+              ) : obj.visible && obj.elementType === 'device' && obj.device?.type === 'game-boy' ? (
+                <ImportedGLBDevice
+                  key={obj.id}
+                  assetPath="/models/game-boy.glb"
+                  device={obj.device}
+                  transform={obj.transform}
+                  screenshot={obj.screenshot}
+                  screenshotType={obj.screenshotType}
+                  screenAspect={1.1}
+                  screenFlipY
+                  selected={obj.id === selectedId}
+                  onSelect={() => selectObject(obj.id)}
+                  targetSize={4.4}
+                  modelRotation={[0, Math.PI / 2, 0]}
                 />
               ) : obj.visible && obj.elementType === 'shape' && obj.shapeConfig ? (
                 <Shape3D

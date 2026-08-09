@@ -27,6 +27,8 @@ const screenImages = {
   "laptop-3d": testImage(2560, 1600, "LAPTOP"),
   "imac-2021": testImage(2560, 1440, "IMAC"),
   "macbook-air": testImage(2560, 1680, "MACBOOK"),
+  "nintendo-switch": null,
+  "game-boy": null,
 };
 
 const deviceNames = {
@@ -35,6 +37,8 @@ const deviceNames = {
   "laptop-3d": "Laptop 3D",
   "imac-2021": "iMac 2021",
   "macbook-air": "MacBook",
+  "nintendo-switch": "Nintendo Switch",
+  "game-boy": "Game Boy",
 };
 
 const device = (type, transform = {}, index = 0) => ({

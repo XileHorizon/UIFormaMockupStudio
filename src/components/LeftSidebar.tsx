@@ -10,6 +10,8 @@ const DEVICE_TYPES: { type: DeviceType; label: string }[] = [
   { type: 'ipad-pro',        label: 'iPad Pro'        },
   { type: 'laptop-3d',       label: 'Laptop 3D'       },
   { type: 'imac-2021',       label: 'iMac 2021'       },
+  { type: 'nintendo-switch',  label: 'Nintendo Switch' },
+  { type: 'game-boy',         label: 'Game Boy'        },
 ]
 
 const SHAPE_TYPES: { type: ShapeType; label: string }[] = [
