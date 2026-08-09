@@ -57,6 +57,29 @@ const device = (type, transform = {}, index = 0) => ({
   locked: false,
 });
 
+const shape = (type, transform = {}, index = 0) => ({
+  id: `qa_shape_${type}_${index}`,
+  name: `${type[0].toUpperCase()}${type.slice(1)} ${index + 1}`,
+  elementType: "shape",
+  device: device("macbook-air").device,
+  shapeConfig: {
+    shape: type,
+    color: "#6557ff",
+    secondaryColor: "#21d4b4",
+    width: type === "ring" ? 260 : 320,
+    height: type === "pedestal" ? 300 : 220,
+    borderRadius: 28,
+    opacity: 1,
+    blur: 4,
+    showShadow: true,
+  },
+  transform: { rotX: -12, rotY: 24, rotZ: 0, posX: 0, posY: 0, posZ: 0, scale: 1, ...transform },
+  screenshot: null,
+  screenshotType: null,
+  visible: true,
+  locked: false,
+});
+
 const state = (objects) => ({
   objects,
   selectedId: selectedMode ? objects.at(-1)?.id ?? null : null,
@@ -73,6 +96,14 @@ const singleScenes = Object.keys(deviceNames).flatMap((type) => [
 ]);
 
 const compositionScenes = [
+  ...["card", "ring", "blob", "pedestal", "plane"].map((type) => ({ name: `shape-${type}`, objects: [shape(type)] })),
+  { name: "composition-3d-elements", objects: [
+    shape("card", { posX: -280, posY: -80, rotY: 32 }, 0),
+    shape("ring", { posX: 10, posY: -100, rotX: 10, rotY: -20 }, 1),
+    shape("blob", { posX: 280, posY: -70, scale: 0.8 }, 2),
+    shape("pedestal", { posX: -140, posY: 180, scale: 0.72 }, 3),
+    shape("plane", { posX: 170, posY: 170, rotY: 38, scale: 0.8 }, 4),
+  ] },
   { name: "composition-two-iphones", objects: [device("iphone-17-pro", { posX: -180, posY: 40, scale: 0.78 }, 0), device("iphone-17-pro", { posX: 190, posY: -25, scale: 1.12, rotY: -20 }, 1)] },
   { name: "composition-iphone-macbook", objects: [device("iphone-17-pro", { posX: -260, posY: 100, scale: 0.75 }, 0), device("macbook-air", { posX: 140, posY: -20, scale: 0.82, rotY: 14 }, 1)] },
   { name: "composition-ipad-imac", objects: [device("ipad-pro", { posX: -250, posY: 75, scale: 0.72, rotY: -18 }, 0), device("imac-2021", { posX: 155, posY: -40, scale: 0.78, rotY: 14 }, 1)] },
@@ -103,7 +134,7 @@ for (const scene of scenes) {
   const project = Buffer.from(JSON.stringify(state(scene.objects))).toString("base64");
   await page.goto(`${baseUrl}?qa=${encodeURIComponent(scene.name)}#project=${project}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await page.locator("canvas").waitFor({ state: "visible", timeout: 120_000 });
-  await page.waitForTimeout(scene.objects.some((item) => item.device.type === "macbook-air") ? 5000 : 2200);
+  await page.waitForTimeout(scene.objects.some((item) => item.elementType === "device" && item.device.type === "macbook-air") ? 5000 : 2200);
   await page.locator("[data-canvas-bg='true']").first().screenshot({ path: new URL(`${scene.name}.png`, outputDir).pathname });
   console.log(`captured ${scene.name}`);
 }

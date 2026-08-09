@@ -10,7 +10,7 @@ import IPadPro3D from './IPadPro3D'
 import Laptop3D from './Laptop3D'
 import IMac2021ThreeD from './IMac2021ThreeD'
 import TextElement from './TextElement'
-import ShapeElement from './ShapeElement'
+import Shape3D from './Shape3D'
 import type { SceneObject } from '../types'
 
 function getCanvasBackground(bg: { type: string; color: string; gradientFrom: string; gradientTo: string; gradientAngle: number }): string {
@@ -407,10 +407,18 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                   selected={obj.id === selectedId}
                   onSelect={() => selectObject(obj.id)}
                 />
+              ) : obj.visible && obj.elementType === 'shape' && obj.shapeConfig ? (
+                <Shape3D
+                  key={obj.id}
+                  config={obj.shapeConfig}
+                  transform={obj.transform}
+                  selected={selectedIds.includes(obj.id)}
+                  onSelect={() => selectObject(obj.id)}
+                />
               ) : null)}
             </Suspense>
 
-            {renderObjects.some(object => object.visible && object.elementType === 'device' && object.device?.showShadow) && (
+            {renderObjects.some(object => object.visible && ((object.elementType === 'device' && object.device?.showShadow) || (object.elementType === 'shape' && object.shapeConfig?.showShadow))) && (
               <ContactShadows
                 position={[0, -2.6, 0]}
                 opacity={lighting.shadowOpacity}
@@ -463,7 +471,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             if (!obj.transform || typeof obj.transform.rotX !== 'number') return null
             const isSelected = selectedIds.includes(obj.id)
             const et = obj.elementType ?? 'device'
-            if (et === 'device') return null
+            if (et === 'device' || et === 'shape') return null
 
             return (
               <div
@@ -486,15 +494,6 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                     {obj.generated ? `◇ ${obj.name}` : obj.name}
                   </div>
                 )}
-
-                {/* 3D perspective container for device + shape */}
-                {et === 'shape' ? (
-                  <div style={{ perspective: '1200px', perspectiveOrigin: '50% 50%' }}>
-                    {et === 'shape' && obj.shapeConfig && (
-                      <ShapeElement config={obj.shapeConfig} transform={obj.transform} />
-                    )}
-                  </div>
-                ) : null}
 
                 {/* Text element (no perspective needed) */}
                 {et === 'text' && obj.textConfig && (
