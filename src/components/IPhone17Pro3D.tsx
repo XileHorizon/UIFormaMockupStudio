@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
 import { DEVICE_BODY_COLORS } from '../types'
+import { IPHONE_17_PRO_SCREEN } from '../deviceGeometry'
 import { useScreenTexture } from './StudioMonitor3D'
 
 interface Props {
@@ -64,7 +65,7 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
     const modelCenter = box.getCenter(new THREE.Vector3())
     next.userData.ownedMaterials = ownedMaterials
     return { model: next, center: modelCenter, normalizedScale: 4.4 / modelSize.y, size: modelSize }
-  }, [device.color, device.materialPreset, device.screenBrightness, source, texture])
+  }, [device.color, device.materialPreset, source])
 
   useEffect(() => () => {
     for (const material of model.userData.ownedMaterials as THREE.Material[]) material.dispose()
@@ -87,18 +88,33 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
       <group scale={normalizedScale} position={[-center.x * normalizedScale, -center.y * normalizedScale, -center.z * normalizedScale]}>
         <primitive object={model} dispose={null} />
       </group>
-      <RoundedBox args={[2.02, 4.24, 0.004]} radius={0.17} smoothness={5} position={[0, 0, 0.199]}>
+      <RoundedBox
+        args={[IPHONE_17_PRO_SCREEN.width, IPHONE_17_PRO_SCREEN.height, 0.004]}
+        radius={IPHONE_17_PRO_SCREEN.cornerRadius}
+        smoothness={5}
+        position={[IPHONE_17_PRO_SCREEN.centerX, IPHONE_17_PRO_SCREEN.centerY, IPHONE_17_PRO_SCREEN.frontZ + 0.002]}
+      >
         <meshBasicMaterial
           map={texture}
           toneMapped={false}
           color={new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness)}
         />
       </RoundedBox>
-      <RoundedBox args={[0.66, 0.19, 0.035]} radius={0.09} smoothness={4} position={[-0.018, 1.987, 0.205]}>
+      <RoundedBox
+        args={[IPHONE_17_PRO_SCREEN.islandWidth, IPHONE_17_PRO_SCREEN.islandHeight, 0.012]}
+        radius={0.09}
+        smoothness={4}
+        position={[IPHONE_17_PRO_SCREEN.islandCenterX, IPHONE_17_PRO_SCREEN.islandCenterY, IPHONE_17_PRO_SCREEN.frontZ + 0.009]}
+      >
         <meshBasicMaterial color="#050609" />
       </RoundedBox>
       {device.showReflection && (
-        <RoundedBox args={[2.02, 4.24, 0.008]} radius={0.17} smoothness={4} position={[0, 0, 0.198]}>
+        <RoundedBox
+          args={[IPHONE_17_PRO_SCREEN.width, IPHONE_17_PRO_SCREEN.height, 0.006]}
+          radius={IPHONE_17_PRO_SCREEN.cornerRadius}
+          smoothness={4}
+          position={[IPHONE_17_PRO_SCREEN.centerX, IPHONE_17_PRO_SCREEN.centerY, IPHONE_17_PRO_SCREEN.frontZ + 0.006]}
+        >
           <meshPhysicalMaterial transparent opacity={0.02} color="#dcecff" roughness={0.12} metalness={0} depthWrite={false} />
         </RoundedBox>
       )}
