@@ -120,6 +120,8 @@ export function useScreenTexture(source: string | null, type: ScreenContentType,
 
   const [texture, setTexture] = useState<THREE.Texture>(placeholder)
 
+  useEffect(() => () => placeholder.dispose(), [placeholder])
+
   useEffect(() => {
     if (!source) {
       setTexture(placeholder)
@@ -144,20 +146,26 @@ export function useScreenTexture(source: string | null, type: ScreenContentType,
     }
 
     let active = true
+    let loadedTexture: THREE.Texture | null = null
     new THREE.TextureLoader().load(source, next => {
       if (!active) return next.dispose()
       if (type === 'image') {
         const contained = makeContainedTexture(next.image as HTMLImageElement, aspect, flipY, rotation, offsetX, offsetY, scale)
         next.dispose()
+        loadedTexture = contained
         setTexture(contained)
         return
       }
       next.colorSpace = THREE.SRGBColorSpace
       next.anisotropy = 8
       fitTextureToScreen(next, aspect, flipY, rotation, offsetX, offsetY, scale)
+      loadedTexture = next
       setTexture(next)
     })
-    return () => { active = false }
+    return () => {
+      active = false
+      loadedTexture?.dispose()
+    }
   }, [aspect, flipY, offsetX, offsetY, placeholder, rotation, scale, source, type])
 
   return texture
