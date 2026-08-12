@@ -206,6 +206,9 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-dialog-title"
         style={{
           background: 'var(--panel)',
           border: '1px solid var(--border)',
@@ -220,9 +223,10 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Export</span>
+          <span id="export-dialog-title" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Export</span>
           <button
             onClick={onClose}
+            aria-label="Close export dialog"
             style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, borderRadius: 4 }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -243,6 +247,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
                 <button
                   key={f.id}
                   onClick={() => setFormat(f.id)}
+                  aria-pressed={format === f.id}
                   style={{
                     flex: 1,
                     padding: '7px 0',
@@ -273,11 +278,11 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
               <span>Output scale</span><span style={{ color: 'var(--accent)' }}>{scale.toFixed(1)}×</span>
             </div>
-            <input type="range" min={1} max={8} step={0.5} value={scale} onChange={event => setScale(Number(event.target.value))} style={{ width: '100%' }} />
+            <input aria-label="Output scale" type="range" min={1} max={8} step={0.5} value={scale} onChange={event => setScale(Number(event.target.value))} style={{ width: '100%' }} />
             <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 5, fontFamily: 'var(--font-mono)' }}>{outputWidth} × {outputHeight} · {estimatedMegapixels} MP</div>
           </div>
 
-          <button onClick={() => setShowAdvanced(value => !value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, textAlign: 'left' }}>
+          <button aria-expanded={showAdvanced} onClick={() => setShowAdvanced(value => !value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, textAlign: 'left' }}>
             {showAdvanced ? '▾' : '▸'} Advanced GPU rendering
           </button>
 
@@ -289,7 +294,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
             {rayTracing && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, paddingBottom: 12, borderBottom: '1px solid var(--border-subtle)' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Samples</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{raySamples}</span></div>
-                <input type="range" min={8} max={512} step={8} value={raySamples} onChange={event => setRaySamples(Number(event.target.value))} style={{ width: '100%' }} />
+                <input aria-label="Ray tracing samples" type="range" min={8} max={512} step={8} value={raySamples} onChange={event => setRaySamples(Number(event.target.value))} style={{ width: '100%' }} />
               </div>
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, fontSize: 10, color: 'var(--text-muted)' }}>
                 <span><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 2 }}>Reduce speckles</strong>Gently filters bright fireflies without crushing metal reflections</span>
@@ -297,22 +302,22 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
               </label>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Light bounces</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{rayBounces}</span></div>
-                <input type="range" min={1} max={12} step={1} value={rayBounces} onChange={event => setRayBounces(Number(event.target.value))} style={{ width: '100%' }} />
+                <input aria-label="Ray tracing light bounces" type="range" min={1} max={12} step={1} value={rayBounces} onChange={event => setRayBounces(Number(event.target.value))} style={{ width: '100%' }} />
               </div>
             </div>}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>GPU supersampling</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{gpuDpr.toFixed(1)}×</span></div>
-                <input type="range" min={1} max={4} step={0.5} value={gpuDpr} onChange={event => setGpuDpr(Number(event.target.value))} style={{ width: '100%' }} />
+                <input aria-label="GPU supersampling" type="range" min={1} max={4} step={0.5} value={gpuDpr} onChange={event => setGpuDpr(Number(event.target.value))} style={{ width: '100%' }} />
                 <div style={{ fontSize: 9, color: 'var(--text-dim)', lineHeight: 1.4 }}>Raises the actual Three.js render resolution before capture. 4× can use substantial GPU memory.</div>
               </div>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Shadow resolution</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{2 ** (shadowLevel + 9)}px</span></div>
-                <input type="range" min={1} max={3} step={1} value={shadowLevel} onChange={event => setShadowLevel(Number(event.target.value))} style={{ width: '100%' }} />
+                <input aria-label="Shadow resolution" type="range" min={1} max={3} step={1} value={shadowLevel} onChange={event => setShadowLevel(Number(event.target.value))} style={{ width: '100%' }} />
               </div>
               {format !== 'png' && <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Compression quality</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{quality}%</span></div>
-                <input type="range" min={50} max={100} step={1} value={quality} onChange={event => setQuality(Number(event.target.value))} style={{ width: '100%' }} />
+                <input aria-label="Compression quality" type="range" min={50} max={100} step={1} value={quality} onChange={event => setQuality(Number(event.target.value))} style={{ width: '100%' }} />
               </div>}
             </div>
             <button onClick={() => { setScale(4); setGpuDpr(4); setShadowLevel(3); setQuality(100); setRaySamples(256); setReduceFireflies(true) }} style={{ padding: '7px 9px', borderRadius: 5, border: '1px solid var(--accent)', background: 'var(--accent-glow)', color: 'var(--accent)', cursor: 'pointer', fontSize: 10, fontWeight: 600 }}>Max GPU preset</button>

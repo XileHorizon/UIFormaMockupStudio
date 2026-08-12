@@ -62,9 +62,12 @@ await page.keyboard.press("Delete");
 await page.waitForTimeout(250);
 const countAfterDelete = await page.getByText(/2 objects/).count();
 
-await page.locator("[data-canvas-bg='true']").first().screenshot({ path: new URL("two-iphones-transformed.png", outputDir).pathname });
+const canvasBounds = await page.locator("[data-canvas-bg='true']").first().boundingBox();
+if (!canvasBounds) throw new Error("Canvas bounds were unavailable");
+await page.screenshot({ path: new URL("two-iphones-transformed.png", outputDir).pathname, clip: canvasBounds });
 await page.getByRole("button", { name: "Export", exact: true }).click();
-await page.getByRole("button", { name: "1×", exact: true }).click();
+const exportDialog = page.getByRole("dialog", { name: "Export" });
+await exportDialog.getByLabel("Output scale").fill("1");
 const transparentLabel = await page.getByText("Yes", { exact: true }).count();
 const downloadPromise = page.waitForEvent("download", { timeout: 120_000 });
 await page.getByRole("button", { name: "Download PNG", exact: true }).click();
