@@ -1,5 +1,9 @@
 import { mkdir } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { chromium } from "/home/kevin/.npm-global/lib/node_modules/openclaw/node_modules/playwright-core/index.mjs";
+
+const require = createRequire(import.meta.url);
+const { PNG } = require("/home/kevin/.npm-global/lib/node_modules/openclaw/node_modules/pngjs");
 
 const phase = process.argv.find((arg) => arg.startsWith("--phase="))?.split("=")[1] ?? "current";
 const selectedMode = process.argv.includes("--selected");
@@ -139,7 +143,30 @@ for (const scene of scenes) {
   await page.goto(`${baseUrl}?qa=${encodeURIComponent(scene.name)}#project=${project}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await page.locator("canvas").waitFor({ state: "visible", timeout: 120_000 });
   await page.waitForTimeout(scene.objects.some((item) => item.elementType === "device" && item.device.type === "macbook-air") ? 5000 : 2200);
-  await page.locator("[data-canvas-bg='true']").first().screenshot({ path: new URL(`${scene.name}.png`, outputDir).pathname });
+  const canvasBounds = await page.locator("[data-canvas-bg='true']").first().boundingBox();
+  if (!canvasBounds) throw new Error(`Canvas bounds were unavailable for ${scene.name}`);
+  // Element screenshots wait for layout stability. A live WebGL canvas never
+  // becomes stable because React Three Fiber continuously presents frames, so
+  // capture the same pixels through an explicit page clip instead.
+  const screenshot = await page.screenshot({ path: new URL(`${scene.name}.png`, outputDir).pathname, clip: canvasBounds });
+  if (scene.name === "iphone-17-pro-front" && !selectedMode) {
+    const png = PNG.sync.read(screenshot);
+    const colored = [];
+    for (let y = 0; y < png.height; y += 1) {
+      for (let x = 0; x < png.width; x += 1) {
+        const offset = (y * png.width + x) * 4;
+        const [red, green, blue, alpha] = png.data.subarray(offset, offset + 4);
+        if (alpha > 200 && blue > 145 && blue > red * 1.25 && green > 45) colored.push([x, y]);
+      }
+    }
+    const xs = colored.map(([x]) => x);
+    const ys = colored.map(([, y]) => y);
+    const coloredWidth = Math.max(...xs) - Math.min(...xs) + 1;
+    const coloredHeight = Math.max(...ys) - Math.min(...ys) + 1;
+    if (coloredWidth < png.width * 0.18 || coloredHeight < png.height * 0.45) {
+      throw new Error(`iPhone screen content does not fill the display (${coloredWidth}x${coloredHeight} colored pixels in ${png.width}x${png.height})`);
+    }
+  }
   console.log(`captured ${scene.name}`);
 }
 

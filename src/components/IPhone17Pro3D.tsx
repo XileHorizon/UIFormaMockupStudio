@@ -20,6 +20,20 @@ interface Props {
 export default function IPhone17Pro3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const source = useLoader(OBJLoader, '/models/iphone-17-pro.obj')
   const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.865717 / 3.913856, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale })
+  const screenMask = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 256
+    canvas.height = Math.round(canvas.width * IPHONE_17_PRO_SCREEN.height / IPHONE_17_PRO_SCREEN.width)
+    const context = canvas.getContext('2d')!
+    const radius = canvas.width * IPHONE_17_PRO_SCREEN.cornerRadius / IPHONE_17_PRO_SCREEN.width
+    context.fillStyle = '#fff'
+    context.beginPath()
+    context.roundRect(0, 0, canvas.width, canvas.height, radius)
+    context.fill()
+    const mask = new THREE.CanvasTexture(canvas)
+    mask.needsUpdate = true
+    return mask
+  }, [])
 
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = source.clone(true)
@@ -71,6 +85,8 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
     for (const material of model.userData.ownedMaterials as THREE.Material[]) material.dispose()
   }, [model])
 
+  useEffect(() => () => screenMask.dispose(), [screenMask])
+
   return (
     <group
       position={[transform.posX / 95, -transform.posY / 95 - 0.08, 0.45 + transform.posZ / 95]}
@@ -88,18 +104,19 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
       <group scale={normalizedScale} position={[-center.x * normalizedScale, -center.y * normalizedScale, -center.z * normalizedScale]}>
         <primitive object={model} dispose={null} />
       </group>
-      <RoundedBox
-        args={[IPHONE_17_PRO_SCREEN.width, IPHONE_17_PRO_SCREEN.height, 0.004]}
-        radius={IPHONE_17_PRO_SCREEN.cornerRadius}
-        smoothness={5}
+      <mesh
         position={[IPHONE_17_PRO_SCREEN.centerX, IPHONE_17_PRO_SCREEN.centerY, IPHONE_17_PRO_SCREEN.frontZ + 0.002]}
       >
+        <planeGeometry args={[IPHONE_17_PRO_SCREEN.width, IPHONE_17_PRO_SCREEN.height]} />
         <meshBasicMaterial
           map={texture}
+          alphaMap={screenMask}
+          alphaTest={0.5}
+          transparent
           toneMapped={false}
           color={new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness)}
         />
-      </RoundedBox>
+      </mesh>
       <RoundedBox
         args={[IPHONE_17_PRO_SCREEN.islandWidth, IPHONE_17_PRO_SCREEN.islandHeight, 0.012]}
         radius={0.09}
