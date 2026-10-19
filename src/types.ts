@@ -6,6 +6,8 @@ type LegacyDeviceType = 'phone' | 'laptop' | 'tablet' | 'monitor' | 'studio-disp
 export type DeviceColor = 'midnight' | 'space-black' | 'graphite' | 'silver' | 'starlight' | 'gold' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink'
 export type ShapeType = 'card' | 'ring' | 'blob' | 'pedestal' | 'plane'
 export type ScreenContentType = 'image' | 'video' | 'gif' | null
+export type ScreenFitMode = 'fill' | 'fit' | 'stretch' | 'custom'
+export type ScreenRotation = 0 | 90 | 180 | 270
 
 export type MaterialPresetId = 'default' | 'glass' | 'frosted' | 'holographic' | 'matte' | 'neon'
 
@@ -115,6 +117,9 @@ export interface DeviceConfig {
   screenOffsetX: number
   screenOffsetY: number
   screenScale: number
+  screenFit: ScreenFitMode
+  screenBackground: string
+  screenRotation: ScreenRotation
 }
 
 export interface TextConfig {
@@ -275,6 +280,9 @@ export function defaultDevice(requestedType: DeviceType | LegacyDeviceType = 'ma
     screenOffsetX: 0,
     screenOffsetY: 0,
     screenScale: 1,
+    screenFit: 'fill',
+    screenBackground: '#000000',
+    screenRotation: 0,
   }
 }
 

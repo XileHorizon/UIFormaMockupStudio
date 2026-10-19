@@ -1,4 +1,4 @@
-import { useContext, useReducer, useCallback, type ReactNode } from 'react'
+import { useContext, useReducer, useCallback, useEffect, type ReactNode } from 'react'
 import type { AppState, Transform, DeviceConfig, Background, LightingConfig, SceneObject, DeviceType, ShapeType, TextConfig, ShapeConfig, LayoutPattern, PatternPlane, PatternAxis, RotationFollowAxis, CopyMode, LayoutModifier, LayoutModifierType } from './types'
 import { createSceneObject, createTextObject, createShapeObject, genId, defaultTransform, TEMPLATES } from './types'
 import { EditorContext, type EditorContextValue } from './context.tsx'
@@ -35,6 +35,9 @@ export function sanitizeObjects(objects: SceneObject[]): SceneObject[] {
       screenOffsetX: o.device?.screenOffsetX ?? 0,
       screenOffsetY: o.device?.screenOffsetY ?? 0,
       screenScale: o.device?.screenScale ?? 1,
+      screenFit: o.device?.screenFit ?? 'fill',
+      screenBackground: o.device?.screenBackground ?? '#000000',
+      screenRotation: o.device?.screenRotation ?? 0,
     },
     })
   })
@@ -78,6 +81,28 @@ const initialState: AppState = {
   layouts: [],
 }
 
+const AUTOSAVE_KEY = 'uiforma-mockup-studio-project-v1'
+
+function restoredInitialState(): AppState {
+  if (typeof window === 'undefined') return initialState
+  try {
+    const saved = window.localStorage.getItem(AUTOSAVE_KEY)
+    if (!saved) return initialState
+    const parsed = JSON.parse(saved) as AppState
+    return {
+      ...initialState,
+      ...parsed,
+      objects: sanitizeObjects(parsed.objects ?? []),
+      background: { ...initialState.background, ...parsed.background },
+      lighting: { ...initialState.lighting, ...parsed.lighting },
+      showExportModal: false,
+      showTemplatesModal: false,
+    }
+  } catch {
+    return initialState
+  }
+}
+
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 type Action =
@@ -107,6 +132,14 @@ type Action =
   | { type: 'ADD_LAYOUT_MODIFIER'; payload: { modifierType: LayoutModifierType } }
   | { type: 'UPDATE_LAYOUT_MODIFIER'; payload: { id: string; changes: Partial<LayoutModifier> } }
   | { type: 'REMOVE_LAYOUT_MODIFIER'; payload: { id: string } }
+
+type HistoryAction = Action | { type: 'UNDO' } | { type: 'REDO' }
+
+interface EditorHistory {
+  past: AppState[]
+  present: AppState
+  future: AppState[]
+}
 
 function updateObj(objects: SceneObject[], id: string, up: (o: SceneObject) => SceneObject): SceneObject[] {
   return objects.map(o => (o.id === id ? up(o) : o))
@@ -476,6 +509,31 @@ function reducer(state: AppState, action: Action): AppState {
   }
 }
 
+const TRANSIENT_ACTIONS = new Set<Action['type']>([
+  'SELECT_OBJECT',
+  'SET_TOOL',
+  'TOGGLE_EXPORT_MODAL',
+  'TOGGLE_TEMPLATES_MODAL',
+])
+
+function historyReducer(history: EditorHistory, action: HistoryAction): EditorHistory {
+  if (action.type === 'UNDO') {
+    const previous = history.past.at(-1)
+    if (!previous) return history
+    return { past: history.past.slice(0, -1), present: previous, future: [history.present, ...history.future].slice(0, 50) }
+  }
+  if (action.type === 'REDO') {
+    const next = history.future[0]
+    if (!next) return history
+    return { past: [...history.past, history.present].slice(-50), present: next, future: history.future.slice(1) }
+  }
+
+  const next = reducer(history.present, action)
+  if (next === history.present) return history
+  if (TRANSIENT_ACTIONS.has(action.type)) return { ...history, present: next }
+  return { past: [...history.past, history.present].slice(-50), present: next, future: [] }
+}
+
 // ── URL share helpers ─────────────────────────────────────────────────────────
 
 export function encodeProjectToUrl(state: AppState): string {
@@ -511,8 +569,30 @@ export function decodeProjectFromUrl(hash: string): AppState | null {
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function EditorProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initialState)
+  const [history, dispatch] = useReducer(historyReducer, undefined, () => ({ past: [], present: restoredInitialState(), future: [] }))
+  const state = history.present
   const selectedObject = evaluateScene(state).find(o => o.id === state.selectedId) ?? null
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const project = { ...state, showExportModal: false, showTemplatesModal: false }
+      try {
+        window.localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(project))
+      } catch {
+        const withoutLargeMedia = {
+          ...project,
+          objects: project.objects.map(object => object.screenshot && object.screenshot.length > 50_000
+            ? { ...object, screenshot: null, screenshotType: null }
+            : object),
+        }
+        try { window.localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(withoutLargeMedia)) } catch { /* storage unavailable */ }
+      }
+    }, 300)
+    return () => window.clearTimeout(timeout)
+  }, [state])
+
+  const undo = useCallback(() => dispatch({ type: 'UNDO' }), [])
+  const redo = useCallback(() => dispatch({ type: 'REDO' }), [])
 
   const addDevice = useCallback((deviceType: DeviceType) => dispatch({ type: 'ADD_DEVICE', payload: { deviceType } }), [])
   const addText = useCallback(() => dispatch({ type: 'ADD_TEXT' }), [])
@@ -542,7 +622,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const removeLayoutModifier = useCallback((id: string) => dispatch({ type: 'REMOVE_LAYOUT_MODIFIER', payload: { id } }), [])
 
   return (
-    <EditorContext.Provider value={{ state, selectedObject, addDevice, addText, addShape, removeObject, selectObject, duplicateObject, updateObject, updateDevice, updateTransform, updateText, updateShape, reorderObjects, setBackground, setLighting, setTool, toggleExportModal, toggleTemplatesModal, loadTemplate, importProject, alignObjects, distributeObjects, applyLayout, generatePattern, addLayoutModifier, updateLayoutModifier, removeLayoutModifier }}>
+    <EditorContext.Provider value={{ state, selectedObject, canUndo: history.past.length > 0, canRedo: history.future.length > 0, undo, redo, addDevice, addText, addShape, removeObject, selectObject, duplicateObject, updateObject, updateDevice, updateTransform, updateText, updateShape, reorderObjects, setBackground, setLighting, setTool, toggleExportModal, toggleTemplatesModal, loadTemplate, importProject, alignObjects, distributeObjects, applyLayout, generatePattern, addLayoutModifier, updateLayoutModifier, removeLayoutModifier }}>
       {children}
     </EditorContext.Provider>
   )

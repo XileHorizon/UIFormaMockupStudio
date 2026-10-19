@@ -1,9 +1,9 @@
 import { mkdir, readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { chromium } from "/home/kevin/.npm-global/lib/node_modules/openclaw/node_modules/playwright-core/index.mjs";
+import { chromium } from "/home/kevin/.nvm/versions/node/v26.8.2/lib/node_modules/openclaw/node_modules/playwright-core/index.mjs";
 
 const require = createRequire(import.meta.url);
-const { PNG } = require("/home/kevin/.npm-global/lib/node_modules/openclaw/node_modules/pngjs");
+const { PNG } = require("/home/kevin/.nvm/versions/node/v26.8.2/lib/node_modules/openclaw/node_modules/pngjs");
 const baseUrl = process.env.UIFORMA_QA_URL ?? "http://127.0.0.1:8443/";
 const outputDir = new URL("../artifacts/visual-qa/final/", import.meta.url);
 
@@ -34,7 +34,7 @@ await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({
   executablePath: "/home/kevin/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome",
   headless: true,
-  args: ["--use-angle=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"],
+  args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"],
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
 const issues = [];

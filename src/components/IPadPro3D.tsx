@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
 import { DEVICE_BODY_COLORS } from '../types'
-import { useScreenTexture } from './StudioMonitor3D'
+import { createScreenMaterial, useScreenTexture } from './StudioMonitor3D'
 
 interface Props {
   device: DeviceConfig
@@ -16,7 +16,7 @@ interface Props {
 
 export default function IPadPro3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/ipad-pro.glb', false, false)
-  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.6477 / 2.2033, rotation: Math.PI, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale })
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.6477 / 2.2033, rotation: 180 + device.screenRotation, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale, fit: device.screenFit })
 
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = scene.clone(true)
@@ -32,7 +32,7 @@ export default function IPadPro3D({ device, transform, screenshot, screenshotTyp
       const nextMaterials = materials.map(sourceMaterial => {
         let material: THREE.Material
         if (sourceMaterial.name === 'Material.010') {
-          material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false, side: THREE.DoubleSide, color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness) })
+          material = createScreenMaterial(texture, device.screenBrightness, device.screenBackground)
         } else if (sourceMaterial.name === 'Material.009' || sourceMaterial.name === 'Material.003') {
           material = new THREE.MeshPhysicalMaterial({ color: '#050609', roughness: 0.22, clearcoat: 0.18, envMapIntensity: 0.42, side: THREE.DoubleSide })
         } else if (sourceMaterial.name === 'Material' || sourceMaterial.name === 'Material.007' || sourceMaterial.name === 'Material.008') {
@@ -66,7 +66,7 @@ export default function IPadPro3D({ device, transform, screenshot, screenshotTyp
       normalizedScale: 5.15 / Math.max(modelSize.x, modelSize.y),
       size: modelSize,
     }
-  }, [device.color, device.materialPreset, device.screenBrightness, scene, texture])
+  }, [device.color, device.materialPreset, device.screenBackground, device.screenBrightness, scene, texture])
 
   useEffect(() => () => {
     for (const material of model.userData.ownedMaterials as THREE.Material[]) material.dispose()

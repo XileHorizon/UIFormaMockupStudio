@@ -535,7 +535,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                   transform={obj.transform}
                   screenshot={obj.screenshot}
                   screenshotType={obj.screenshotType}
-                  screenAspect={1.1}
+                  screenAspect={3.159811 / 2.864342}
                   screenFlipY
                   selected={obj.id === selectedId}
                   onSelect={() => selectObject(obj.id)}

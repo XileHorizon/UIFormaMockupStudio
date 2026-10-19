@@ -1,12 +1,14 @@
 import { mkdir } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { chromium } from "/home/kevin/.npm-global/lib/node_modules/openclaw/node_modules/playwright-core/index.mjs";
+import { chromium } from "/home/kevin/.nvm/versions/node/v26.8.2/lib/node_modules/openclaw/node_modules/playwright-core/index.mjs";
 
 const require = createRequire(import.meta.url);
-const { PNG } = require("/home/kevin/.npm-global/lib/node_modules/openclaw/node_modules/pngjs");
+const { PNG } = require("/home/kevin/.nvm/versions/node/v26.8.2/lib/node_modules/openclaw/node_modules/pngjs");
 
 const phase = process.argv.find((arg) => arg.startsWith("--phase="))?.split("=")[1] ?? "current";
 const selectedMode = process.argv.includes("--selected");
+const screensOnly = process.argv.includes("--screens-only");
+const screenFit = process.argv.find((arg) => arg.startsWith("--fit="))?.split("=")[1] ?? "fill";
 const sceneFilter = process.argv.find((arg) => arg.startsWith("--scene="))?.split("=")[1];
 const baseUrl = process.env.UIFORMA_QA_URL ?? "http://127.0.0.1:8443/";
 const outputDir = new URL(`../artifacts/visual-qa/${phase}/`, import.meta.url);
@@ -31,8 +33,8 @@ const screenImages = {
   "laptop-3d": testImage(2560, 1600, "LAPTOP"),
   "imac-2021": testImage(2560, 1440, "IMAC"),
   "macbook-air": testImage(2560, 1680, "MACBOOK"),
-  "nintendo-switch": null,
-  "game-boy": null,
+  "nintendo-switch": testImage(1280, 720, "SWITCH"),
+  "game-boy": testImage(160, 144, "GAME BOY"),
 };
 
 const deviceNames = {
@@ -57,6 +59,12 @@ const device = (type, transform = {}, index = 0) => ({
     showReflection: true,
     screenBrightness: 1,
     materialPreset: "default",
+    screenOffsetX: 0,
+    screenOffsetY: 0,
+    screenScale: 1,
+    screenFit,
+    screenBackground: "#000000",
+    screenRotation: 0,
   },
   transform: { rotX: 0, rotY: 0, rotZ: 0, posX: 0, posY: 0, scale: 1, ...transform },
   screenshot: screenImages[type],
@@ -126,7 +134,7 @@ const compositionScenes = [
 ];
 
 await mkdir(outputDir, { recursive: true });
-const browser = await chromium.launch({ executablePath: browserPath, headless: true, args: ["--use-angle=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"] });
+const browser = await chromium.launch({ executablePath: browserPath, headless: true, args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
 const consoleIssues = [];
 const failedRequests = [];
@@ -136,7 +144,7 @@ page.on("console", (message) => {
 page.on("pageerror", (error) => consoleIssues.push(`pageerror: ${error.message}`));
 page.on("requestfailed", (request) => failedRequests.push(`${request.url()} — ${request.failure()?.errorText ?? "failed"}`));
 
-const scenes = [...singleScenes, ...compositionScenes].filter((scene) => !sceneFilter || scene.name === sceneFilter);
+const scenes = (screensOnly ? singleScenes : [...singleScenes, ...compositionScenes]).filter((scene) => !sceneFilter || scene.name === sceneFilter);
 
 for (const scene of scenes) {
   const project = Buffer.from(JSON.stringify(state(scene.objects))).toString("base64");

@@ -11,6 +11,63 @@ export interface DeviceScreenGeometry {
   islandCenterY: number
 }
 
+export type ScreenFitMode = 'fill' | 'fit' | 'stretch' | 'custom'
+
+export interface ScreenUvPlacement {
+  repeatX: number
+  repeatY: number
+  offsetX: number
+  offsetY: number
+  rotation: number
+}
+
+/** Maps screen UVs into source-image UVs without changing the source pixels. */
+export function screenUvPlacement({
+  imageAspect,
+  screenAspect,
+  mode,
+  scale = 1,
+  offsetX = 0,
+  offsetY = 0,
+  rotation = 0,
+}: {
+  imageAspect: number
+  screenAspect: number
+  mode: ScreenFitMode
+  scale?: number
+  offsetX?: number
+  offsetY?: number
+  rotation?: number
+}): ScreenUvPlacement {
+  const normalizedRotation = ((rotation % 360) + 360) % 360
+  const quarterTurn = normalizedRotation === 90 || normalizedRotation === 270
+  const effectiveImageAspect = quarterTurn ? 1 / imageAspect : imageAspect
+  let repeatX = 1
+  let repeatY = 1
+
+  if (mode === 'fill') {
+    if (effectiveImageAspect > screenAspect) repeatX = screenAspect / effectiveImageAspect
+    else repeatY = effectiveImageAspect / screenAspect
+  } else if (mode === 'fit' || mode === 'custom') {
+    if (effectiveImageAspect > screenAspect) repeatY = effectiveImageAspect / screenAspect
+    else repeatX = screenAspect / effectiveImageAspect
+  }
+
+  const zoom = Math.max(0.25, Math.min(4, scale))
+  repeatX /= zoom
+  repeatY /= zoom
+
+  return {
+    repeatX,
+    repeatY,
+    // The texture transform already scales around its centre (texture.center
+    // = 0.5), so the offset is only the pan. Positive moves the image right/up.
+    offsetX: 0 - (Math.max(-100, Math.min(100, offsetX)) / 200) * repeatX + 0,
+    offsetY: 0 - (Math.max(-100, Math.min(100, offsetY)) / 200) * repeatY + 0,
+    rotation: normalizedRotation * Math.PI / 180,
+  }
+}
+
 interface Bounds3 {
   min: readonly [number, number, number]
   max: readonly [number, number, number]
@@ -31,7 +88,9 @@ export function normalizedScreenGeometry(
     centerX: (displayCenter[0] - modelCenter[0]) * scale,
     centerY: (displayCenter[1] - modelCenter[1]) * scale,
     frontZ: (displayBounds.max[2] - modelCenter[2]) * scale,
-    cornerRadius: 0.17,
+    // Outer shell radius minus the measured 0.06-unit bezel inset. Keeping
+    // these arcs concentric avoids the heavy dark wedges at the top corners.
+    cornerRadius: 0.24,
     islandWidth: 0.654,
     islandHeight: 0.186,
     islandCenterX: -0.019,

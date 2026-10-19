@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
 import { DEVICE_BODY_COLORS } from '../types'
-import { useScreenTexture } from './StudioMonitor3D'
+import { createScreenMaterial, useScreenTexture } from './StudioMonitor3D'
 
 interface Props {
   device: DeviceConfig
@@ -18,7 +18,7 @@ const normalizedName = (name: string) => name.toLowerCase().replace(/[._\s-]/g, 
 
 export default function ClosedMacBook3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/macbook-open.glb', false, false)
-  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 5.72 / 3.72, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale })
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 290.5 / 193.2, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale, fit: device.screenFit, rotation: device.screenRotation })
   const bodyColor = DEVICE_BODY_COLORS[device.color]
   const bodyRoughness = device.materialPreset === 'matte' ? 0.62 : 0.38
 
@@ -53,12 +53,7 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
 
         geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
         child.geometry = geometry
-        child.material = own(new THREE.MeshBasicMaterial({
-          map: texture,
-          toneMapped: false,
-          side: THREE.DoubleSide,
-          color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
-        }))
+        child.material = own(createScreenMaterial(texture, device.screenBrightness, device.screenBackground))
       } else if (name.includes('keyboardkeys')) {
         child.material = own(new THREE.MeshPhysicalMaterial({ color: '#111317', metalness: 0.03, roughness: 0.52, clearcoat: 0.08, envMapIntensity: 0.45 }))
       } else if (name.includes('keyboardbase')) {
@@ -84,7 +79,7 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
 
     next.userData.ownedMaterials = ownedMaterials
     return next
-  }, [bodyColor, bodyRoughness, device.screenBrightness, scene, texture])
+  }, [bodyColor, bodyRoughness, device.screenBackground, device.screenBrightness, scene, texture])
 
   useEffect(() => () => {
     for (const material of model.userData.ownedMaterials as THREE.Material[]) material.dispose()

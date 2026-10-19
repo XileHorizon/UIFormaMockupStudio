@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { IconRefresh } from '@tabler/icons-react'
 import { useEditor } from '../store'
-import type { LightingPreset, LightingConfig, BackgroundType, DeviceColor, MaterialPresetId } from '../types'
+import type { LightingPreset, LightingConfig, BackgroundType, DeviceColor, MaterialPresetId, ScreenFitMode, ScreenRotation } from '../types'
 import { LIGHTING_CONFIGS, MATERIAL_PRESETS } from '../types'
 import { Button, ButtonBlock, FieldRow, NumberField, SegmentedControl, SidebarSlider, SwatchGroup, TextArea } from '../kit'
 import { ColorField, Hint, PropRow, Section, SwitchRow } from './studio-ui'
@@ -102,10 +102,28 @@ export default function RightSidebar() {
                 <SwitchRow label="Reflection" checked={d.showReflection} onCheckedChange={v => updateDevice(selId!, { showReflection: v })} />
                 <SidebarSlider label="Brightness" value={d.screenBrightness} min={0.3} max={1.5} step={0.01} formatValue={pct} onValueChange={v => updateDevice(selId!, { screenBrightness: v })} />
                 {sel.screenshot && <>
+                  <ButtonBlock
+                    className="studio-block-4"
+                    label="Image fit"
+                    value={d.screenFit ?? 'fill'}
+                    onValueChange={screenFit => updateDevice(selId!, { screenFit })}
+                    items={([
+                      ['fill', 'Fill'], ['fit', 'Fit'], ['stretch', 'Stretch'], ['custom', 'Original'],
+                    ] as [ScreenFitMode, string][]).map(([value, label]) => ({ value, label }))}
+                  />
+                  <PropRow label="Rotation">
+                    <SegmentedControl
+                      label="Image rotation"
+                      value={String(d.screenRotation ?? 0)}
+                      onValueChange={value => updateDevice(selId!, { screenRotation: Number(value) as ScreenRotation })}
+                      items={[0, 90, 180, 270].map(value => ({ value: String(value), label: `${value}°` }))}
+                    />
+                  </PropRow>
+                  {(d.screenFit === 'fit' || d.screenFit === 'custom') && <ColorField label="Letterbox" value={d.screenBackground ?? '#000000'} onChange={screenBackground => updateDevice(selId!, { screenBackground })} />}
                   <SidebarSlider label="Image X" value={d.screenOffsetX ?? 0} min={-100} max={100} step={1} formatValue={v => `${v.toFixed(0)}%`} onValueChange={v => updateDevice(selId!, { screenOffsetX: v })} />
                   <SidebarSlider label="Image Y" value={d.screenOffsetY ?? 0} min={-100} max={100} step={1} formatValue={v => `${v.toFixed(0)}%`} onValueChange={v => updateDevice(selId!, { screenOffsetY: v })} />
-                  <SidebarSlider label="Image zoom" value={d.screenScale ?? 1} min={0.5} max={3} step={0.01} formatValue={v => `${v.toFixed(2)}×`} onValueChange={v => updateDevice(selId!, { screenScale: v })} />
-                  <PropRow label="Image fit"><Button appearance="surface" size="compact" leadingIcon={<IconRefresh />} onClick={() => updateDevice(selId!, { screenOffsetX: 0, screenOffsetY: 0, screenScale: 1 })}>Reset</Button></PropRow>
+                  <SidebarSlider label="Image zoom" value={d.screenScale ?? 1} min={0.25} max={4} step={0.01} formatValue={v => `${v.toFixed(2)}×`} onValueChange={v => updateDevice(selId!, { screenScale: v })} />
+                  <PropRow label="Placement"><Button appearance="surface" size="compact" leadingIcon={<IconRefresh />} onClick={() => updateDevice(selId!, { screenOffsetX: 0, screenOffsetY: 0, screenScale: 1, screenRotation: 0 })}>Reset</Button></PropRow>
                 </>}
               </Section>
 

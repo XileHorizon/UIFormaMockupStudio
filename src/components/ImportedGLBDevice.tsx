@@ -2,7 +2,7 @@ import { Edges, useGLTF } from '@react-three/drei'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
-import { useScreenTexture } from './StudioMonitor3D'
+import { createScreenMaterial, useScreenTexture } from './StudioMonitor3D'
 
 interface Props {
   assetPath: string
@@ -40,6 +40,8 @@ export default function ImportedGLBDevice({
     offsetX: device.screenOffsetX,
     offsetY: device.screenOffsetY,
     scale: device.screenScale,
+    fit: device.screenFit,
+    rotation: device.screenRotation,
   })
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = scene.clone(true)
@@ -56,12 +58,7 @@ export default function ImportedGLBDevice({
           const name = source.name.toUpperCase()
           const isScreen = name === 'SCREEN' || child.name.toUpperCase() === 'SCREEN'
           if (isScreen) {
-            const material = new THREE.MeshBasicMaterial({
-              map: screenTexture,
-              toneMapped: false,
-              side: THREE.DoubleSide,
-              color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
-            })
+            const material = createScreenMaterial(screenTexture, device.screenBrightness, device.screenBackground)
             material.name = source.name
             ownedMaterials.push(material)
             return material
@@ -99,12 +96,7 @@ export default function ImportedGLBDevice({
         geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
         geometry.userData.importedScreenOwned = true
         child.geometry = geometry
-        const material = new THREE.MeshBasicMaterial({
-          map: screenTexture,
-          toneMapped: false,
-          side: THREE.DoubleSide,
-          color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
-        })
+        const material = createScreenMaterial(screenTexture, device.screenBrightness, device.screenBackground)
         material.name = Array.isArray(child.material) ? child.material[0]?.name ?? 'Screen' : child.material.name
         ownedMaterials.push(material)
         child.material = material
@@ -153,7 +145,7 @@ export default function ImportedGLBDevice({
       normalizedScale: targetSize / Math.max(modelSize.x, modelSize.y, modelSize.z),
       size: modelSize,
     }
-  }, [appearance, device.screenBrightness, modelRotation[0], modelRotation[1], modelRotation[2], scene, screenTexture, targetSize])
+  }, [appearance, device.screenBackground, device.screenBrightness, modelRotation[0], modelRotation[1], modelRotation[2], scene, screenTexture, targetSize])
 
   useEffect(() => () => {
     model.traverse(child => {

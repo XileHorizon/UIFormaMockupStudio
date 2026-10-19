@@ -6,7 +6,7 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
 import { DEVICE_BODY_COLORS } from '../types'
 import { IPHONE_17_PRO_SCREEN } from '../deviceGeometry'
-import { useScreenTexture } from './StudioMonitor3D'
+import { createScreenMaterial, useScreenTexture } from './StudioMonitor3D'
 
 interface Props {
   device: DeviceConfig
@@ -19,7 +19,7 @@ interface Props {
 
 export default function IPhone17Pro3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const source = useLoader(OBJLoader, '/models/iphone-17-pro.obj')
-  const texture = useScreenTexture(screenshot, screenshotType, { aspect: 1.865717 / 3.913856, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale })
+  const texture = useScreenTexture(screenshot, screenshotType, { aspect: IPHONE_17_PRO_SCREEN.width / IPHONE_17_PRO_SCREEN.height, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale, fit: device.screenFit, rotation: device.screenRotation })
   const screenMask = useMemo(() => {
     const canvas = document.createElement('canvas')
     canvas.width = 256
@@ -34,6 +34,10 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
     mask.needsUpdate = true
     return mask
   }, [])
+  const screenMaterial = useMemo(
+    () => createScreenMaterial(texture, device.screenBrightness, device.screenBackground, THREE.DoubleSide, screenMask),
+    [device.screenBackground, device.screenBrightness, screenMask, texture],
+  )
 
   const { model, center, normalizedScale, size } = useMemo(() => {
     const next = source.clone(true)
@@ -86,6 +90,7 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
   }, [model])
 
   useEffect(() => () => screenMask.dispose(), [screenMask])
+  useEffect(() => () => screenMaterial.dispose(), [screenMaterial])
 
   return (
     <group
@@ -108,14 +113,7 @@ export default function IPhone17Pro3D({ device, transform, screenshot, screensho
         position={[IPHONE_17_PRO_SCREEN.centerX, IPHONE_17_PRO_SCREEN.centerY, IPHONE_17_PRO_SCREEN.frontZ + 0.002]}
       >
         <planeGeometry args={[IPHONE_17_PRO_SCREEN.width, IPHONE_17_PRO_SCREEN.height]} />
-        <meshBasicMaterial
-          map={texture}
-          alphaMap={screenMask}
-          alphaTest={0.5}
-          transparent
-          toneMapped={false}
-          color={new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness)}
-        />
+        <primitive object={screenMaterial} attach="material" />
       </mesh>
       <RoundedBox
         args={[IPHONE_17_PRO_SCREEN.islandWidth, IPHONE_17_PRO_SCREEN.islandHeight, 0.012]}

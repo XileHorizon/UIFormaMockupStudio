@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { DeviceConfig, ScreenContentType, Transform } from '../types'
 import { DEVICE_BODY_COLORS } from '../types'
-import { useScreenTexture } from './StudioMonitor3D'
+import { createScreenMaterial, useScreenTexture } from './StudioMonitor3D'
 
 interface Props {
   device: DeviceConfig
@@ -16,7 +16,7 @@ interface Props {
 
 export default function Laptop3D({ device, transform, screenshot, screenshotType, selected, onSelect }: Props) {
   const { scene } = useGLTF('/models/laptop-3d.glb', false, false)
-  const screenTexture = useScreenTexture(screenshot, screenshotType, { aspect: 5.34 / 3.33, offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale })
+  const screenTexture = useScreenTexture(screenshot, screenshotType, { aspect: 0.426 / Math.hypot(0.272, 0.025), offsetX: device.screenOffsetX, offsetY: device.screenOffsetY, scale: device.screenScale, fit: device.screenFit, rotation: device.screenRotation })
   const keyboardTexture = useTexture('/models/laptop-keyboard.png')
   keyboardTexture.colorSpace = THREE.SRGBColorSpace
   keyboardTexture.flipY = false
@@ -55,12 +55,7 @@ export default function Laptop3D({ device, transform, screenshot, screenshotType
       const nextMaterials = materials.map(sourceMaterial => {
         let material: THREE.Material
         if (sourceMaterial.name === 'Material.004') {
-          material = new THREE.MeshBasicMaterial({
-            map: screenTexture,
-            toneMapped: false,
-            side: THREE.DoubleSide,
-            color: new THREE.Color(device.screenBrightness, device.screenBrightness, device.screenBrightness),
-          })
+          material = createScreenMaterial(screenTexture, device.screenBrightness, device.screenBackground)
         } else if (sourceMaterial.name === 'Material') {
           material = new THREE.MeshStandardMaterial({ map: keyboardTexture, roughness: 0.58, side: THREE.DoubleSide })
         } else if (sourceMaterial.name === 'Material.001') {
@@ -95,7 +90,7 @@ export default function Laptop3D({ device, transform, screenshot, screenshotType
       normalizedScale: 5.7 / Math.max(modelSize.x, modelSize.y, modelSize.z),
       size: modelSize,
     }
-  }, [device.color, device.materialPreset, device.screenBrightness, keyboardTexture, scene, screenTexture])
+  }, [device.color, device.materialPreset, device.screenBackground, device.screenBrightness, keyboardTexture, scene, screenTexture])
 
   useEffect(() => () => {
     for (const material of model.userData.ownedMaterials as THREE.Material[]) material.dispose()
