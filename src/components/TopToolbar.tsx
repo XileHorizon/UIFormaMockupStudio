@@ -37,7 +37,7 @@ function Sep() {
 }
 
 export default function TopToolbar({ onExport }: { onExport: () => void }) {
-  const { state, selectedObject, setTool, duplicateObject, removeObject, alignObjects, distributeObjects, toggleTemplatesModal, importProject } = useEditor()
+  const { state, selectedObject, canUndo, canRedo, undo, redo, setTool, duplicateObject, removeObject, alignObjects, distributeObjects, toggleTemplatesModal, importProject } = useEditor()
   const fileImportRef = useRef<HTMLInputElement>(null)
   const screenshotRef = useRef<HTMLInputElement>(null)
   const { activeTool, objects, selectedId } = state
@@ -112,6 +112,15 @@ export default function TopToolbar({ onExport }: { onExport: () => void }) {
         onValueChange={setTool}
         items={tools.map(t => ({ value: t.id, label: <span title={t.label}>{t.key}</span> }))}
       />
+
+      <Sep />
+
+      <Btn title="Undo (Cmd+Z)" onClick={canUndo ? undo : undefined}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 14L4 9l5-5"/><path d="M4 9h9a7 7 0 017 7v4"/></svg>
+      </Btn>
+      <Btn title="Redo (Cmd+Shift+Z)" onClick={canRedo ? redo : undefined}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 14l5-5-5-5"/><path d="M20 9h-9a7 7 0 00-7 7v4"/></svg>
+      </Btn>
 
       <Sep />
 

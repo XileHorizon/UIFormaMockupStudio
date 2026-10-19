@@ -8,7 +8,7 @@ import ExportModal from './components/ExportModal'
 import TemplatesModal from './components/TemplatesModal'
 
 function Editor() {
-  const { state, selectedObject, setTool, toggleExportModal, toggleTemplatesModal, duplicateObject, removeObject } = useEditor()
+  const { state, selectedObject, setTool, toggleExportModal, toggleTemplatesModal, duplicateObject, removeObject, undo, redo } = useEditor()
   const canvasRef = useRef<HTMLDivElement>(null)
 
   // Global keyboard shortcuts
@@ -19,6 +19,8 @@ function Editor() {
 
       if ((e.metaKey || e.ctrlKey) && e.key === 'e') { e.preventDefault(); toggleExportModal(); return }
       if ((e.metaKey || e.ctrlKey) && e.key === 'd') { e.preventDefault(); if (selectedObject) duplicateObject(selectedObject.id); return }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return }
 
       switch (e.key) {
         case 'v': case 'V': setTool('select'); break
@@ -37,7 +39,7 @@ function Editor() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedObject, setTool, toggleExportModal, toggleTemplatesModal, duplicateObject, removeObject])
+  }, [selectedObject, setTool, toggleExportModal, toggleTemplatesModal, duplicateObject, removeObject, redo, undo])
 
   return (
     <div className="studio-ui" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>

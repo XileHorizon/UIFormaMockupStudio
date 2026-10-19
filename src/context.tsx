@@ -4,6 +4,10 @@ import type { AppState, Transform, DeviceConfig, Background, LightingConfig, Sce
 export interface EditorContextValue {
   state: AppState
   selectedObject: SceneObject | null
+  canUndo: boolean
+  canRedo: boolean
+  undo: () => void
+  redo: () => void
   addDevice: (deviceType: DeviceType) => void
   addText: () => void
   addShape: (shape: ShapeType) => void
