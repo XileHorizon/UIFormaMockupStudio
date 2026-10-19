@@ -28,7 +28,7 @@ function SelectionBox({ size }: { size: [number, number, number] }) {
   return <mesh>
     <boxGeometry args={size} />
     <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-    <Edges color="#3b7ef8" />
+    <Edges color="#7f8cff" />
   </mesh>
 }
 

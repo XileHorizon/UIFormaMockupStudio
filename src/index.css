@@ -1,27 +1,62 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
 }
 
+/*
+ * UIForma Kit dark theme (XileHorizon/UIFormaKit, src/ui/tokens/tokens.css).
+ * Copy the values from the Kit when its tokens change; the Studio only reads the aliases below.
+ */
 :root {
-  --bg: #0a0b0e;
-  --panel: #0f1013;
-  --surface: #161719;
-  --surface-2: #1c1d20;
-  --border: #252629;
-  --border-subtle: #1c1d21;
-  --text: #dddee3;
-  --text-muted: #5e616e;
-  --text-dim: #383a44;
-  --accent: #3b7ef8;
-  --accent-glow: rgba(59, 126, 248, 0.18);
-  --accent-hover: #5592ff;
-  --danger: #e05555;
-  --success: #4caf7d;
+  --uf-neutral-0: #fafafa;
+  --uf-neutral-100: #d2d3d8;
+  --uf-neutral-200: #b3b4bd;
+  --uf-neutral-300: #9799a3;
+  --uf-neutral-400: #7d808b;
+  --uf-neutral-500: #666874;
+  --uf-neutral-600: #4e505a;
+  --uf-neutral-700: #3c3e46;
+  --uf-neutral-800: #2c2d34;
+  --uf-neutral-900: #1e1f23;
+  --uf-neutral-1000: #121212;
+  --uf-primary-100: #c6d1ff;
+  --uf-primary-200: #9faeff;
+  --uf-primary-300: #7f8cff;
+  --uf-primary-400: #6669fb;
+  --uf-primary-500: #534de1;
+  --uf-primary-600: #412ec2;
+  --uf-primary-800: #280084;
+  --uf-primary-900: #1b005f;
+  --uf-secondary-100: #f2d163;
+  --uf-secondary-200: #d6b100;
+  --uf-danger-300: #ee6094;
+  --uf-success-300: #00b392;
+  --uf-radius-sm: 4px;
+  --uf-radius-md: 8px;
+
+  /* Studio aliases */
+  --bg: var(--uf-neutral-1000);
+  --panel: var(--uf-neutral-900);
+  --header: var(--uf-neutral-800);
+  --surface: var(--uf-neutral-800);
+  --surface-2: var(--uf-neutral-700);
+  --border: var(--uf-neutral-700);
+  --border-subtle: #26272c;
+  --text: var(--uf-neutral-0);
+  --text-muted: var(--uf-neutral-300);
+  --text-dim: var(--uf-neutral-500);
+  --accent: var(--uf-primary-400);
+  --accent-hover: var(--uf-primary-300);
+  --accent-glow: var(--uf-primary-900);
+  --accent-border: var(--uf-primary-500);
+  --accent-text: var(--uf-primary-100);
+  --accent-strong: var(--uf-primary-600);
+  --highlight: var(--uf-secondary-200);
+  --danger: var(--uf-danger-300);
+  --success: var(--uf-success-300);
 }
 
 html, body, #root {
@@ -55,12 +90,12 @@ body {
 
 /* Checkerboard for transparent bg */
 .checkerboard {
-  background-color: #1a1a1e;
+  background-color: var(--uf-neutral-900);
   background-image:
-    linear-gradient(45deg, #222226 25%, transparent 25%),
-    linear-gradient(-45deg, #222226 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #222226 75%),
-    linear-gradient(-45deg, transparent 75%, #222226 75%);
+    linear-gradient(45deg, var(--uf-neutral-800) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--uf-neutral-800) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--uf-neutral-800) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--uf-neutral-800) 75%);
   background-size: 16px 16px;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
 }
@@ -72,17 +107,18 @@ body {
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
-  height: 3px;
+  height: 6px;
   background: var(--surface-2);
-  border-radius: 2px;
+  border-radius: 8px;
   outline: none;
 }
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   background: var(--accent);
+  border: 2px solid var(--uf-neutral-0);
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.1s;
@@ -91,10 +127,23 @@ input[type='range']::-webkit-slider-thumb:hover {
   transform: scale(1.2);
 }
 input[type='range']::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   background: var(--accent);
   border-radius: 50%;
-  border: none;
+  border: 2px solid var(--uf-neutral-0);
   cursor: pointer;
 }
+
+/* Kit focus ring */
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Viewport navigation cluster */
+.view-nav { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: var(--uf-radius-md); background: color-mix(in srgb, var(--uf-neutral-900) 82%, transparent); border: 1px solid var(--border); backdrop-filter: blur(10px); }
+.view-nav button { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 30px; height: 28px; padding: 0 8px; border: 0; border-radius: var(--uf-radius-sm); background: transparent; color: var(--text-muted); font: 11px var(--font-mono); cursor: pointer; transition: background .1s, color .1s; }
+.view-nav button:hover { background: var(--surface-2); color: var(--text); }
+.view-nav button[aria-pressed='true'] { background: var(--accent-strong); color: #fff; }
+.view-nav hr { width: 1px; height: 18px; margin: 0 3px; border: 0; background: var(--border); }

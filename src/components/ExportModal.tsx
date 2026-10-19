@@ -252,9 +252,9 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
                     flex: 1,
                     padding: '7px 0',
                     borderRadius: 6,
-                    border: format === f.id ? '1px solid var(--accent)' : '1px solid var(--border)',
+                    border: format === f.id ? '1px solid var(--accent-border)' : '1px solid var(--border)',
                     background: format === f.id ? 'var(--accent-glow)' : 'var(--surface)',
-                    color: format === f.id ? 'var(--accent)' : 'var(--text-muted)',
+                    color: format === f.id ? 'var(--accent-text)' : 'var(--text-muted)',
                     cursor: 'pointer',
                     fontSize: 12,
                     fontWeight: 500,
@@ -320,7 +320,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
                 <input aria-label="Compression quality" type="range" min={50} max={100} step={1} value={quality} onChange={event => setQuality(Number(event.target.value))} style={{ width: '100%' }} />
               </div>}
             </div>
-            <button onClick={() => { setScale(4); setGpuDpr(4); setShadowLevel(3); setQuality(100); setRaySamples(256); setReduceFireflies(true) }} style={{ padding: '7px 9px', borderRadius: 5, border: '1px solid var(--accent)', background: 'var(--accent-glow)', color: 'var(--accent)', cursor: 'pointer', fontSize: 10, fontWeight: 600 }}>Max GPU preset</button>
+            <button onClick={() => { setScale(4); setGpuDpr(4); setShadowLevel(3); setQuality(100); setRaySamples(256); setReduceFireflies(true) }} style={{ padding: '7px 9px', borderRadius: 5, border: '1px solid var(--accent-border)', background: 'var(--accent-glow)', color: 'var(--accent)', cursor: 'pointer', fontSize: 10, fontWeight: 600 }}>Max GPU preset</button>
           </div>}
 
           {error && <div role="alert" style={{ padding: '8px 10px', borderRadius: 6, background: 'rgba(255,70,70,.08)', border: '1px solid rgba(255,90,90,.3)', color: 'var(--danger)', fontSize: 10, lineHeight: 1.4 }}>{error}</div>}

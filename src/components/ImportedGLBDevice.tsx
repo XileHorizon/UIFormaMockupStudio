@@ -191,7 +191,7 @@ export default function ImportedGLBDevice({
         <mesh>
           <boxGeometry args={[size.x * normalizedScale * 1.04, size.y * normalizedScale * 1.04, size.z * normalizedScale * 1.04]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-          <Edges color="#3b7ef8" />
+          <Edges color="#7f8cff" />
         </mesh>
       )}
     </group>

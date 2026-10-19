@@ -107,7 +107,7 @@ export default function ClosedMacBook3D({ device, transform, screenshot, screens
           <mesh position={[0, 2.18, 0]}>
             <boxGeometry args={[6.25, 4.55, 4.9]} />
             <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-            <Edges color="#3b7ef8" />
+            <Edges color="#7f8cff" />
           </mesh>
         )}
       </group>

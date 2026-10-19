@@ -49,19 +49,19 @@ const ET_ICONS: Record<string, React.ReactNode> = {
 function Sep() { return <div style={{ height: 1, background: 'var(--border-subtle)', margin: '4px 10px' }} /> }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <div style={{ padding: '9px 12px 5px', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>{children}</div>
+  return <div style={{ padding: '12px 12px 6px', fontSize: 13, fontWeight: 700, color: 'var(--accent-hover)', fontFamily: 'var(--font-mono)' }}>{children}</div>
 }
 
 function AddBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)', transition: 'all 0.1s' }}
-      onMouseEnter={e => { (e.currentTarget).style.background = 'var(--accent-glow)'; (e.currentTarget).style.color = 'var(--accent)'; (e.currentTarget).style.borderColor = 'var(--accent)' }}
+      style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, height: 32, padding: '0 10px', borderRadius: 'var(--uf-radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--font-mono)', textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', transition: 'all 0.1s' }}
+      onMouseEnter={e => { (e.currentTarget).style.background = 'var(--accent-glow)'; (e.currentTarget).style.color = 'var(--accent-text)'; (e.currentTarget).style.borderColor = 'var(--accent-border)' }}
       onMouseLeave={e => { (e.currentTarget).style.background = 'var(--surface)'; (e.currentTarget).style.color = 'var(--text-muted)'; (e.currentTarget).style.borderColor = 'var(--border)' }}
     >
-      <span style={{ fontSize: 14, lineHeight: 1, marginBottom: 1 }}>+</span>
-      {label}
+      <span style={{ fontSize: 14, lineHeight: 1, marginBottom: 1, color: 'var(--accent-hover)' }}>+</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
     </button>
   )
 }
@@ -91,14 +91,14 @@ function ObjectRow({ obj, selected, index, total, onSelect, onRename, onToggleVi
   return (
     <div
       onClick={event => onSelect(event.shiftKey)}
-      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 6px 5px 10px', borderRadius: 6, margin: '0 6px', background: selected ? 'var(--accent-glow)' : 'transparent', border: selected ? '1px solid rgba(59,126,248,0.3)' : '1px solid transparent', cursor: 'pointer', opacity: obj.visible ? 1 : 0.4 }}
+      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 6px 5px 10px', borderRadius: 'var(--uf-radius-sm)', margin: '0 6px', background: selected ? 'var(--accent-glow)' : 'transparent', border: selected ? '1px solid var(--accent-border)' : '1px solid transparent', cursor: 'pointer', opacity: obj.visible ? 1 : 0.4 }}
       onMouseEnter={e => { if (!selected) (e.currentTarget).style.background = 'var(--surface)' }}
       onMouseLeave={e => { if (!selected) (e.currentTarget).style.background = 'transparent' }}
     >
-      <span style={{ color: selected ? 'var(--accent)' : 'var(--text-dim)', flexShrink: 0, display: 'flex' }}>{ET_ICONS[et]}</span>
+      <span style={{ color: selected ? 'var(--accent-text)' : 'var(--text-dim)', flexShrink: 0, display: 'flex' }}>{ET_ICONS[et]}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         {editing ? (
-          <input ref={inputRef} value={draft} onChange={e => setDraft(e.target.value)} onBlur={commit} onKeyDown={onKey} onClick={e => e.stopPropagation()} style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--accent)', borderRadius: 4, color: 'var(--text)', fontSize: 11, padding: '2px 4px', fontFamily: 'inherit', outline: 'none' }} autoFocus />
+          <input ref={inputRef} value={draft} onChange={e => setDraft(e.target.value)} onBlur={commit} onKeyDown={onKey} onClick={e => e.stopPropagation()} style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--accent-border)', borderRadius: 4, color: 'var(--text)', fontSize: 11, padding: '2px 4px', fontFamily: 'inherit', outline: 'none' }} autoFocus />
         ) : (
           <span onDoubleClick={e => { e.stopPropagation(); setDraft(obj.name); setEditing(true); setTimeout(() => inputRef.current?.select(), 10) }} style={{ fontSize: 11, color: selected ? 'var(--text)' : 'var(--text-muted)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {obj.name}
@@ -214,7 +214,7 @@ export default function LeftSidebar() {
   }, [liveLink, copyMode, layout, layoutSpacing, layoutDepth, layoutCurve, copyCount, patternPlane, mirrorAxis, rotationAxis, generatePattern])
 
   return (
-    <div style={{ width: 220, flexShrink: 0, background: 'var(--panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
+    <div style={{ width: 232, flexShrink: 0, background: 'var(--panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
 
       {/* Scene object list */}
       <SectionLabel>Scene ({validObjects.length})</SectionLabel>
@@ -256,7 +256,7 @@ export default function LeftSidebar() {
       <div style={{ padding: '0 10px 10px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
           {LAYOUTS.map(item => (
-            <button key={item.id} onClick={() => setLayout(item.id)} style={{ padding: '7px 3px 6px', borderRadius: 6, border: `1px solid ${layout === item.id ? 'var(--accent)' : 'var(--border)'}`, background: layout === item.id ? 'var(--accent-glow)' : 'var(--surface)', color: layout === item.id ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--font-mono)' }}>
+            <button key={item.id} onClick={() => setLayout(item.id)} style={{ padding: '7px 3px 6px', borderRadius: 'var(--uf-radius-sm)', border: `1px solid ${layout === item.id ? 'var(--accent)' : 'var(--border)'}`, background: layout === item.id ? 'var(--accent-glow)' : 'var(--surface)', color: layout === item.id ? 'var(--accent-text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--font-mono)' }}>
               <span style={{ display: 'block', height: 13, fontSize: 11 }}>{item.glyph}</span>{item.label}
             </button>
           ))}
@@ -276,12 +276,12 @@ export default function LeftSidebar() {
           <input type="checkbox" checked={rainbowColors} onChange={e => setRainbowColors(e.target.checked)} /> Rainbow device colors
         </label>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4, marginTop: 9 }}>
-          {([['arrange', 'Arrange Existing'], ['clone', 'Clone Tool']] as const).map(([mode, label]) => <button key={mode} onClick={() => setCopyMode(mode)} style={{ padding: '6px 2px', borderRadius: 5, border: `1px solid ${copyMode === mode ? 'var(--accent)' : 'var(--border)'}`, background: copyMode === mode ? 'var(--accent-glow)' : 'var(--surface)', color: copyMode === mode ? 'var(--accent)' : 'var(--text-muted)', fontSize: 9, cursor: 'pointer' }}>{label}</button>)}
+          {([['arrange', 'Arrange Existing'], ['clone', 'Clone Tool']] as const).map(([mode, label]) => <button key={mode} onClick={() => setCopyMode(mode)} style={{ padding: '6px 2px', borderRadius: 'var(--uf-radius-sm)', border: `1px solid ${copyMode === mode ? 'var(--accent)' : 'var(--border)'}`, background: copyMode === mode ? 'var(--accent-glow)' : 'var(--surface)', color: copyMode === mode ? 'var(--accent-text)' : 'var(--text-muted)', fontSize: 9, cursor: 'pointer' }}>{label}</button>)}
         </div>
         {copyMode === 'clone' && <label style={{ display: 'grid', gridTemplateColumns: '48px 1fr 30px', alignItems: 'center', gap: 5, marginTop: 7, fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
           <span>Copies</span><input type="range" min={2} max={24} value={copyCount} onChange={e => setCopyCount(Number(e.target.value))} style={{ width: '100%' }} /><span style={{ textAlign: 'right', color: 'var(--text-muted)' }}>{copyCount}</span>
         </label>}
-        {copyMode === 'clone' && <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 7, marginTop: 8, padding: '6px 7px', borderRadius: 5, background: liveLink ? 'var(--accent-glow)' : 'var(--surface)', border: `1px solid ${liveLink ? 'var(--accent)' : 'var(--border)'}`, fontSize: 10, color: liveLink ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer' }}>
+        {copyMode === 'clone' && <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 7, marginTop: 8, padding: '6px 7px', borderRadius: 'var(--uf-radius-sm)', background: liveLink ? 'var(--accent-glow)' : 'var(--surface)', border: `1px solid ${liveLink ? 'var(--accent)' : 'var(--border)'}`, fontSize: 10, color: liveLink ? 'var(--accent-text)' : 'var(--text-muted)', cursor: 'pointer' }}>
           <span><strong>Live Link</strong><small style={{ display: 'block', marginTop: 2, color: 'var(--text-dim)', fontSize: 8 }}>Auto-update copies and pattern math</small></span>
           <input type="checkbox" checked={liveLink} onChange={e => setLiveLink(e.target.checked)} />
         </label>}
@@ -290,10 +290,10 @@ export default function LeftSidebar() {
           <label style={{ fontSize: 9, color: 'var(--text-dim)' }}>Rotation follows<select value={rotationAxis} onChange={e => setRotationAxis(e.target.value as RotationFollowAxis)} style={{ width: '100%', marginTop: 3, padding: 4, background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 4 }}><option value="none">None</option><option value="x">X axis</option><option value="y">Y axis</option><option value="z">Z axis</option></select></label>
         </div>
         {layout === 'mirror' && <label style={{ display: 'block', marginTop: 7, fontSize: 9, color: 'var(--text-dim)' }}>Mirror across<select value={mirrorAxis} onChange={e => setMirrorAxis(e.target.value as PatternAxis)} style={{ width: '100%', marginTop: 3, padding: 4, background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 4 }}><option value="x">X axis</option><option value="y">Y axis</option><option value="z">Z axis</option></select></label>}
-        {!(liveLink && copyMode === 'clone') && <button onClick={applyCurrentLayout} disabled={copyMode === 'clone' ? !selIsDevice : layoutTargets.length < 2} style={{ width: '100%', marginTop: 9, padding: '7px 8px', borderRadius: 6, border: 'none', background: (copyMode === 'clone' ? selIsDevice : layoutTargets.length >= 2) ? 'var(--accent)' : 'var(--surface-2)', color: (copyMode === 'clone' ? selIsDevice : layoutTargets.length >= 2) ? '#fff' : 'var(--text-dim)', cursor: (copyMode === 'clone' ? selIsDevice : layoutTargets.length >= 2) ? 'pointer' : 'default', fontSize: 10, fontWeight: 600 }}>
+        {!(liveLink && copyMode === 'clone') && <button onClick={applyCurrentLayout} disabled={copyMode === 'clone' ? !selIsDevice : layoutTargets.length < 2} style={{ width: '100%', marginTop: 9, padding: '7px 8px', borderRadius: 'var(--uf-radius-sm)', border: 'none', background: (copyMode === 'clone' ? selIsDevice : layoutTargets.length >= 2) ? 'var(--accent)' : 'var(--surface-2)', color: (copyMode === 'clone' ? selIsDevice : layoutTargets.length >= 2) ? '#fff' : 'var(--text-dim)', cursor: (copyMode === 'clone' ? selIsDevice : layoutTargets.length >= 2) ? 'pointer' : 'default', fontSize: 10, fontWeight: 600 }}>
           {copyMode === 'arrange' ? `Arrange ${layoutTargets.length} devices` : `Clone ${copyCount} independent devices`}
         </button>}
-        {liveLink && copyMode === 'clone' && <div style={{ marginTop: 8, padding: '6px 7px', borderRadius: 5, background: 'var(--accent-glow)', color: 'var(--accent)', fontSize: 9, textAlign: 'center' }}>Live pattern active · changes apply automatically</div>}
+        {liveLink && copyMode === 'clone' && <div style={{ marginTop: 8, padding: '6px 7px', borderRadius: 'var(--uf-radius-sm)', background: 'var(--accent-glow)', color: 'var(--accent)', fontSize: 9, textAlign: 'center' }}>Live pattern active · changes apply automatically</div>}
         <div style={{ marginTop: 6, fontSize: 9, lineHeight: 1.35, color: 'var(--text-dim)' }}>{liveLink && copyMode === 'clone' ? 'Device, material, color, and screen edits stay synchronized while placement and rotation recalculate from the selected axes.' : copyMode === 'clone' ? 'Creates fully independent copies from the selected device.' : 'Rearranges visible, unlocked devices without creating copies.'}</div>
       </div>
 
@@ -303,7 +303,7 @@ export default function LeftSidebar() {
 
       {/* Add Devices */}
       <SectionLabel>Devices</SectionLabel>
-      <div style={{ padding: '0 10px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+      <div style={{ padding: '0 10px 8px', display: 'grid', gridTemplateColumns: '1fr', gap: 4 }}>
         {DEVICE_TYPES.map(d => <AddBtn key={d.type} label={d.label} onClick={() => addDevice(d.type)} />)}
       </div>
 
@@ -321,14 +321,14 @@ export default function LeftSidebar() {
       <Sep />
 
       {/* Angle presets (device objects only) */}
-      <SectionLabel>Angle Presets</SectionLabel>
+      <SectionLabel>Device Angle</SectionLabel>
       <div style={{ padding: '0 10px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
         {(Object.keys(ANGLE_PRESETS) as AnglePreset[]).map(preset => (
           <button
             key={preset}
             onClick={() => applyAngle(preset)}
             disabled={!selectedId}
-            style={{ padding: '6px 5px', borderRadius: 5, border: '1px solid var(--border)', background: 'var(--surface)', color: selectedId ? 'var(--text-muted)' : 'var(--text-dim)', cursor: selectedId ? 'pointer' : 'default', fontSize: 10, fontFamily: 'var(--font-mono)', transition: 'all 0.1s', textAlign: 'center' }}
+            style={{ padding: '6px 5px', borderRadius: 'var(--uf-radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: selectedId ? 'var(--text-muted)' : 'var(--text-dim)', cursor: selectedId ? 'pointer' : 'default', fontSize: 10, fontFamily: 'var(--font-mono)', transition: 'all 0.1s', textAlign: 'center' }}
             onMouseEnter={e => { if (selectedId) { (e.currentTarget).style.background = 'var(--surface-2)'; (e.currentTarget).style.color = 'var(--text)' } }}
             onMouseLeave={e => { (e.currentTarget).style.background = 'var(--surface)'; (e.currentTarget).style.color = selectedId ? 'var(--text-muted)' : 'var(--text-dim)' }}
           >
@@ -352,7 +352,7 @@ export default function LeftSidebar() {
         >
           {sel?.screenshot && selIsDevice ? (
             <>
-              <div style={{ width: '100%', height: 60, borderRadius: 5, overflow: 'hidden', background: '#000' }}>
+              <div style={{ width: '100%', height: 60, borderRadius: 'var(--uf-radius-sm)', overflow: 'hidden', background: '#000' }}>
                 {sel.screenshotType === 'video'
                   ? <video src={sel.screenshot} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
                   : <img src={sel.screenshot} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -384,7 +384,7 @@ export default function LeftSidebar() {
         {sel?.screenshot && selIsDevice && selectedId && (
           <button
             onClick={() => updateObject(selectedId, { screenshot: null, screenshotType: null })}
-            style={{ marginTop: 5, width: '100%', padding: '5px', borderRadius: 5, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)', transition: 'all 0.1s' }}
+            style={{ marginTop: 5, width: '100%', padding: '5px', borderRadius: 'var(--uf-radius-sm)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)', transition: 'all 0.1s' }}
             onMouseEnter={e => { (e.currentTarget).style.color = 'var(--danger)'; (e.currentTarget).style.borderColor = 'var(--danger)' }}
             onMouseLeave={e => { (e.currentTarget).style.color = 'var(--text-muted)'; (e.currentTarget).style.borderColor = 'var(--border)' }}
           >

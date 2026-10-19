@@ -71,7 +71,7 @@ function TransformGizmo({ object, tool, onChange }: { object: SceneObject; tool:
   const common = { position: 'absolute' as const, pointerEvents: 'auto' as const, userSelect: 'none' as const, touchAction: 'none' as const }
   return <div data-export-exclude="true" style={{ ...common, left: `calc(50% + ${object.transform.posX}px)`, top: `calc(50% + ${object.transform.posY}px)`, zIndex: 20 }}>
     {tool === 'move' ? <>
-      <div onPointerDown={e => begin('all', e)} title="Move freely" style={{ ...common, width: 14, height: 14, left: -7, top: -7, borderRadius: 3, background: '#fff', border: '2px solid #3b7ef8', cursor: 'move' }} />
+      <div onPointerDown={e => begin('all', e)} title="Move freely" style={{ ...common, width: 14, height: 14, left: -7, top: -7, borderRadius: 3, background: '#fff', border: '2px solid var(--accent)', cursor: 'move' }} />
       <div onPointerDown={e => begin('x', e)} title="Move X" style={{ ...common, left: 7, top: -2, width: 54, height: 4, background: '#ff4d5e', cursor: 'ew-resize' }}><span style={{ position: 'absolute', right: -13, top: -7, color: '#ff6877', fontSize: 10 }}>X</span></div>
       <div onPointerDown={e => begin('y', e)} title="Move Y" style={{ ...common, left: -2, top: 7, width: 4, height: 54, background: '#4dd97b', cursor: 'ns-resize' }}><span style={{ position: 'absolute', left: -3, bottom: -15, color: '#67e18f', fontSize: 10 }}>Y</span></div>
       <div onPointerDown={e => begin('z', e)} title="Move Z (depth)" style={{ ...common, left: -47, top: -47, width: 34, height: 4, background: '#4d8dff', transform: 'rotate(45deg)', transformOrigin: 'right center', cursor: 'ns-resize' }}><span style={{ position: 'absolute', left: -13, top: -7, color: '#69a1ff', fontSize: 10, transform: 'rotate(-45deg)' }}>Z</span></div>
@@ -81,21 +81,124 @@ function TransformGizmo({ object, tool, onChange }: { object: SceneObject; tool:
   </div>
 }
 
-function SceneCamera({ visibleObjectCount, manuallyAdjusted }: { visibleObjectCount: number; manuallyAdjusted: MutableRefObject<boolean> }) {
-  const { camera } = useThree()
+export type CameraView = 'reset' | 'front' | 'three-quarter' | 'side' | 'top' | 'zoom-in' | 'zoom-out'
+const CAMERA_VIEW_EVENT = 'uiforma-camera-view'
+const VIEW_ANGLES: Record<'front' | 'three-quarter' | 'side' | 'top', [azimuth: number, elevation: number]> = {
+  front: [0, 0.5],
+  'three-quarter': [38, 16],
+  side: [90, 4],
+  top: [0, 72],
+}
+const MIN_DISTANCE = 4.5
+const MAX_DISTANCE = 34
+
+export function requestCameraView(view: CameraView) {
+  window.dispatchEvent(new CustomEvent<CameraView>(CAMERA_VIEW_EVENT, { detail: view }))
+}
+
+type OrbitControlsLike = { target: THREE.Vector3; update: () => void; addEventListener: (type: 'start', listener: () => void) => void; removeEventListener: (type: 'start', listener: () => void) => void }
+type Flight = { fromPosition: THREE.Vector3; toPosition: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3; progress: number }
+
+const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+
+function CameraRig({ visibleObjectCount, manuallyAdjusted, onViewChange }: { visibleObjectCount: number; manuallyAdjusted: MutableRefObject<boolean>; onViewChange: (view: CameraView | null) => void }) {
+  const camera = useThree(state => state.camera)
+  const controls = useThree(state => state.controls) as unknown as OrbitControlsLike | null
+  const flight = useRef<Flight | null>(null)
+  // The editor's sidebars leave a narrow viewport. Pull the camera back as a
+  // composition grows so the placement grid remains visible in both the
+  // editor and exported image instead of being clipped like a one-device shot.
+  const homeDistance = visibleObjectCount <= 1 ? 11.5 : visibleObjectCount === 2 ? 15 : 21
 
   useEffect(() => {
     if (manuallyAdjusted.current) return
-    // The editor's sidebars leave a narrow viewport. Pull the camera back as a
-    // composition grows so the placement grid remains visible in both the
-    // editor and exported image instead of being clipped like a one-device shot.
-    const distance = visibleObjectCount <= 1 ? 11.5 : visibleObjectCount === 2 ? 15 : 21
-    camera.position.set(0, 0.1, distance)
+    camera.position.set(0, 0.1, homeDistance)
     camera.lookAt(0, 0, 0)
     camera.updateProjectionMatrix()
-  }, [camera, manuallyAdjusted, visibleObjectCount])
+    controls?.target.set(0, 0, 0)
+    controls?.update()
+  }, [camera, controls, manuallyAdjusted, homeDistance])
+
+  // Any direct orbit, pan, or zoom cancels a running camera move.
+  useEffect(() => {
+    if (!controls) return
+    const cancel = () => { flight.current = null; onViewChange(null) }
+    controls.addEventListener('start', cancel)
+    return () => controls.removeEventListener('start', cancel)
+  }, [controls, onViewChange])
+
+  useEffect(() => {
+    const onView = (event: Event) => {
+      const view = (event as CustomEvent<CameraView>).detail
+      const target = controls?.target.clone() ?? new THREE.Vector3()
+      const offset = camera.position.clone().sub(target)
+      let toPosition: THREE.Vector3
+      let toTarget = target
+      if (view === 'zoom-in' || view === 'zoom-out') {
+        const distance = THREE.MathUtils.clamp(offset.length() * (view === 'zoom-in' ? 0.8 : 1.25), MIN_DISTANCE, MAX_DISTANCE)
+        toPosition = target.clone().add(offset.setLength(distance))
+      } else {
+        const [azimuth, elevation] = VIEW_ANGLES[view === 'reset' ? 'front' : view]
+        const distance = view === 'reset' ? homeDistance : THREE.MathUtils.clamp(offset.length(), MIN_DISTANCE, MAX_DISTANCE)
+        if (view === 'reset') toTarget = new THREE.Vector3()
+        const a = THREE.MathUtils.degToRad(azimuth)
+        const e = THREE.MathUtils.degToRad(elevation)
+        toPosition = toTarget.clone().add(new THREE.Vector3(Math.sin(a) * Math.cos(e), Math.sin(e), Math.cos(a) * Math.cos(e)).multiplyScalar(distance))
+        if (view === 'reset') manuallyAdjusted.current = false
+        else manuallyAdjusted.current = true
+        onViewChange(view === 'reset' ? 'front' : view)
+      }
+      flight.current = { fromPosition: camera.position.clone(), toPosition, fromTarget: target, toTarget, progress: 0 }
+    }
+    window.addEventListener(CAMERA_VIEW_EVENT, onView)
+    return () => window.removeEventListener(CAMERA_VIEW_EVENT, onView)
+  }, [camera, controls, homeDistance, manuallyAdjusted, onViewChange])
+
+  useFrame((_, delta) => {
+    const move = flight.current
+    if (!move) return
+    move.progress = Math.min(1, move.progress + delta / 0.55)
+    const eased = easeInOutCubic(move.progress)
+    camera.position.lerpVectors(move.fromPosition, move.toPosition, eased)
+    if (controls) {
+      controls.target.lerpVectors(move.fromTarget, move.toTarget, eased)
+      controls.update()
+    } else {
+      camera.lookAt(move.toTarget)
+    }
+    if (move.progress >= 1) flight.current = null
+  })
 
   return null
+}
+
+const NAV_VIEWS: { view: CameraView; label: string; title: string }[] = [
+  { view: 'front', label: 'Front', title: 'Front view (1)' },
+  { view: 'three-quarter', label: '3/4', title: 'Three-quarter view (2)' },
+  { view: 'side', label: 'Side', title: 'Side view (3)' },
+  { view: 'top', label: 'Top', title: 'Top view (7)' },
+]
+
+function ViewNavigator({ activeView }: { activeView: CameraView | null }) {
+  const iconProps = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  return (
+    <div data-export-exclude="true" className="view-nav" role="toolbar" aria-label="Camera" onPointerDown={e => e.stopPropagation()}>
+      <button title="Reset view (0 or double-click)" aria-label="Reset view" onClick={() => requestCameraView('reset')}>
+        <svg {...iconProps}><path d="M3 12a9 9 0 1 0 3-6.7" /><polyline points="3 3 3 9 9 9" /></svg>
+      </button>
+      <hr />
+      {NAV_VIEWS.map(({ view, label, title }) => (
+        <button key={view} title={title} aria-pressed={activeView === view} onClick={() => requestCameraView(view)}>{label}</button>
+      ))}
+      <hr />
+      <button title="Zoom out (-)" aria-label="Zoom out" onClick={() => requestCameraView('zoom-out')}>
+        <svg {...iconProps}><line x1="5" y1="12" x2="19" y2="12" /></svg>
+      </button>
+      <button title="Zoom in (+)" aria-label="Zoom in" onClick={() => requestCameraView('zoom-in')}>
+        <svg {...iconProps}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+      </button>
+    </div>
+  )
 }
 
 function PathTracingController() {
@@ -237,6 +340,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
   const dragRef = useRef<DragState>({ startX: 0, startY: 0, startRotX: 0, startRotY: 0, objectId: null, active: false })
   const containerRef = useRef<HTMLDivElement>(null)
   const cameraManuallyAdjusted = useRef(false)
+  const [cameraView, setCameraView] = useState<CameraView | null>('front')
   const [renderQuality, setRenderQuality] = useState({ dpr: 2, shadowMapSize: 2048 })
 
   useEffect(() => {
@@ -287,6 +391,9 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       if (e.key === 'Escape') selectObject(null)
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const view = ({ '0': 'reset', Home: 'reset', '1': 'front', '2': 'three-quarter', '3': 'side', '7': 'top', '+': 'zoom-in', '=': 'zoom-in', '-': 'zoom-out' } as Record<string, CameraView>)[e.key]
+      if (view) { e.preventDefault(); requestCameraView(view) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -311,6 +418,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
       onPointerDown={onCanvasPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onDoubleClick={e => { const target = e.target as HTMLElement; if (target.tagName === 'CANVAS' || target.dataset.canvasBg) requestCameraView('reset') }}
     >
       <div
         ref={canvasRef}
@@ -337,7 +445,7 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
             camera={{ position: [0, 0.1, 11.5], fov: 38, near: 0.1, far: 100 }}
             onPointerMissed={() => selectObject(null)}
           >
-            <SceneCamera visibleObjectCount={renderObjects.filter(object => object.visible).length} manuallyAdjusted={cameraManuallyAdjusted} />
+            <CameraRig visibleObjectCount={renderObjects.filter(object => object.visible).length} manuallyAdjusted={cameraManuallyAdjusted} onViewChange={setCameraView} />
             <PathTracingController />
             <ambientLight intensity={0.08 * lighting.ambientIntensity} />
             <directionalLight
@@ -461,7 +569,24 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
                 color="#11141a"
               />
             )}
-            <OrbitControls makeDefault enableZoom enableDamping dampingFactor={0.08} minDistance={7} maxDistance={26} minPolarAngle={Math.PI * 0.28} maxPolarAngle={Math.PI * 0.72} onStart={() => { cameraManuallyAdjusted.current = true }} />
+            <OrbitControls
+              makeDefault
+              enableZoom
+              enablePan
+              screenSpacePanning
+              zoomToCursor
+              enableDamping
+              dampingFactor={0.12}
+              rotateSpeed={0.7}
+              zoomSpeed={0.85}
+              panSpeed={0.8}
+              minDistance={MIN_DISTANCE}
+              maxDistance={MAX_DISTANCE}
+              minPolarAngle={Math.PI * 0.06}
+              maxPolarAngle={Math.PI * 0.62}
+              mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN }}
+              onStart={() => { cameraManuallyAdjusted.current = true }}
+            />
           </Canvas>
         </div>
 
@@ -518,11 +643,11 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
               >
                 {/* Selection ring */}
                 {isSelected && (
-                  <div style={{ position: 'absolute', inset: -8, borderRadius: 8, border: '1.5px solid rgba(59,126,248,0.6)', boxShadow: '0 0 0 1px rgba(59,126,248,0.2), 0 0 20px rgba(59,126,248,0.08)', pointerEvents: 'none', zIndex: 10 }} />
+                  <div style={{ position: 'absolute', inset: -8, borderRadius: 8, border: '1.5px solid var(--accent)', boxShadow: '0 0 0 1px var(--accent-glow), 0 0 20px rgba(102,105,251,0.12)', pointerEvents: 'none', zIndex: 10 }} />
                 )}
                 {/* Element type badge on selected */}
                 {isSelected && (
-                  <div style={{ position: 'absolute', top: -28, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'var(--accent)', fontFamily: 'var(--font-mono)', background: 'rgba(0,0,0,0.7)', padding: '2px 7px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 11, border: '1px solid rgba(59,126,248,0.3)' }}>
+                  <div style={{ position: 'absolute', top: -28, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'var(--accent-text)', fontFamily: 'var(--font-mono)', background: 'var(--accent-glow)', padding: '2px 7px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 11, border: '1px solid var(--accent-border)' }}>
                     {obj.generated ? `◇ ${obj.name}` : obj.name}
                   </div>
                 )}
@@ -544,13 +669,12 @@ export default function Canvas3D({ canvasRef }: { canvasRef: React.RefObject<HTM
         </div>
       </div>
 
-      {/* Canvas hints */}
-      <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6, pointerEvents: 'none' }}>
-        {['Orbit to rotate', 'Scroll to zoom', 'Esc to deselect'].map(hint => (
-          <div key={hint} style={{ padding: '4px 10px', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', borderRadius: 6, fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-mono)', border: '1px solid rgba(255,255,255,0.06)', whiteSpace: 'nowrap' }}>
-            {hint}
-          </div>
-        ))}
+      {/* Camera navigation */}
+      <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <ViewNavigator activeView={cameraView} />
+        <div data-export-exclude="true" style={{ display: 'flex', gap: 14, pointerEvents: 'none', fontSize: 10, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+          <span>Drag · orbit</span><span>Right-drag · pan</span><span>Scroll · zoom</span><span>Double-click · reset</span>
+        </div>
       </div>
 
       {/* Transform readout */}

@@ -8,8 +8,8 @@ import { LIGHTING_CONFIGS, MATERIAL_PRESETS } from '../types'
 function SectionLabel({ children, collapsible, open, onToggle }: { children: React.ReactNode; collapsible?: boolean; open?: boolean; onToggle?: () => void }) {
   return (
     <div style={{ padding: '10px 14px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: collapsible ? 'pointer' : 'default' }} onClick={collapsible ? onToggle : undefined}>
-      <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>{children}</span>
-      {collapsible && <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="var(--text-dim)" strokeWidth="1.5" style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}><path d="M2 4l3 3 3-3" /></svg>}
+      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-hover)', fontFamily: 'var(--font-mono)' }}>{children}</span>
+      {collapsible && <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="var(--accent-hover)" strokeWidth="1.5" style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}><path d="M2 4l3 3 3-3" /></svg>}
     </div>
   )
 }
@@ -17,7 +17,7 @@ function SectionLabel({ children, collapsible, open, onToggle }: { children: Rea
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '4px 14px', gap: 8 }}>
-      <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 76, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', width: 84, flexShrink: 0 }}>{label}</span>
       <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
     </div>
   )
@@ -26,8 +26,8 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 function Slider({ value, min, max, step = 0.01, onChange, fmt }: { value: number; min: number; max: number; step?: number; onChange: (v: number) => void; fmt?: (v: number) => string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(parseFloat(e.target.value))} style={{ flex: 1 }} />
-      <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', width: 36, textAlign: 'right' }}>{fmt ? fmt(value) : value.toFixed(2)}</span>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(parseFloat(e.target.value))} style={{ flex: 1, minWidth: 0, background: `linear-gradient(90deg, var(--accent) ${((value - min) / (max - min)) * 100}%, var(--surface-2) 0)` }} />
+      <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', minWidth: 40, flexShrink: 0, textAlign: 'right' }}>{fmt ? fmt(value) : value.toFixed(2)}</span>
     </div>
   )
 }
@@ -35,7 +35,7 @@ function Slider({ value, min, max, step = 0.01, onChange, fmt }: { value: number
 function NumberInput({ value, onChange, step = 1, suffix = '' }: { value: number; onChange: (v: number) => void; step?: number; suffix?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-      <input type="number" value={value.toFixed(step < 1 ? 2 : 1)} step={step} onChange={e => onChange(parseFloat(e.target.value) || 0)} style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 5, color: 'var(--text)', fontSize: 11, fontFamily: 'var(--font-mono)', padding: '4px 6px', outline: 'none', width: '100%' }}
+      <input type="number" value={value.toFixed(step < 1 ? 2 : 1)} step={step} onChange={e => onChange(parseFloat(e.target.value) || 0)} style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--uf-radius-sm)', color: 'var(--text)', fontSize: 11, fontFamily: 'var(--font-mono)', padding: '5px 7px', outline: 'none', width: '100%' }}
         onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
         onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
       />
@@ -46,8 +46,8 @@ function NumberInput({ value, onChange, step = 1, suffix = '' }: { value: number
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div onClick={() => onChange(!value)} style={{ width: 32, height: 18, borderRadius: 9, background: value ? 'var(--accent)' : 'var(--surface-2)', border: '1px solid ' + (value ? 'var(--accent)' : 'var(--border)'), cursor: 'pointer', position: 'relative', transition: 'all 0.15s', flexShrink: 0 }}>
-      <div style={{ position: 'absolute', top: 2, left: value ? 15 : 2, width: 12, height: 12, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+    <div onClick={() => onChange(!value)} style={{ width: 32, height: 18, borderRadius: 9, background: value ? 'var(--accent-strong)' : 'var(--uf-primary-900)', border: '1px solid ' + (value ? 'var(--accent-strong)' : 'var(--uf-primary-900)'), cursor: 'pointer', position: 'relative', transition: 'all 0.15s', flexShrink: 0 }}>
+      <div style={{ position: 'absolute', top: 2, left: value ? 15 : 2, width: 12, height: 12, borderRadius: '50%', background: 'var(--uf-neutral-0)', transition: 'left 0.15s' }} />
     </div>
   )
 }
@@ -55,14 +55,14 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
 function ColorPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <input type="color" value={value.startsWith('rgba') ? '#ffffff' : value} onChange={e => onChange(e.target.value)} style={{ width: 32, height: 26, borderRadius: 5, border: '1px solid var(--border)', background: 'none', cursor: 'pointer', padding: 2 }} />
+      <input type="color" value={value.startsWith('rgba') ? '#ffffff' : value} onChange={e => onChange(e.target.value)} style={{ width: 32, height: 26, borderRadius: 'var(--uf-radius-sm)', border: '1px solid var(--border)', background: 'none', cursor: 'pointer', padding: 2 }} />
       <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>{value.startsWith('rgba') ? value.slice(0, 20) + '…' : value.toUpperCase()}</span>
     </div>
   )
 }
 
 function ColorSwatch({ color, selected, onClick, title }: { color: string; selected: boolean; onClick: () => void; title: string }) {
-  return <div title={title} onClick={onClick} style={{ width: 20, height: 20, borderRadius: '50%', background: color, cursor: 'pointer', border: selected ? '2px solid var(--accent)' : '2px solid transparent', outline: selected ? '1px solid var(--accent)' : 'none', flexShrink: 0 }} />
+  return <div title={title} onClick={onClick} style={{ width: 20, height: 20, borderRadius: '50%', background: color, cursor: 'pointer', border: selected ? '2px solid var(--accent)' : '2px solid transparent', outline: selected ? '1px solid var(--accent-border)' : 'none', flexShrink: 0 }} />
 }
 
 function Sep() { return <div style={{ height: 1, background: 'var(--border-subtle)' }} /> }
@@ -71,7 +71,7 @@ function ChipRow<T extends string>({ options, value, onChange }: { options: { id
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '2px 14px' }}>
       {options.map(opt => (
-        <button key={opt.id} onClick={() => onChange(opt.id)} style={{ padding: '5px 8px', borderRadius: 5, border: value === opt.id ? '1px solid var(--accent)' : '1px solid var(--border)', background: value === opt.id ? 'var(--accent-glow)' : 'var(--surface)', color: value === opt.id ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
+        <button key={opt.id} onClick={() => onChange(opt.id)} style={{ padding: '5px 8px', borderRadius: 'var(--uf-radius-sm)', border: value === opt.id ? '1px solid var(--accent-border)' : '1px solid var(--border)', background: value === opt.id ? 'var(--accent-glow)' : 'var(--surface)', color: value === opt.id ? 'var(--accent-text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
           {opt.label}
         </button>
       ))}
@@ -128,7 +128,7 @@ export default function RightSidebar() {
   const et = sel?.elementType ?? 'device'
 
   return (
-    <div style={{ width: 256, flexShrink: 0, background: 'var(--panel)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
+    <div style={{ width: 280, flexShrink: 0, background: 'var(--panel)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
 
       {sel && t && typeof t.rotX === 'number' ? (
         <>
@@ -180,7 +180,7 @@ export default function RightSidebar() {
                     <Row label="Image X"><Slider value={d.screenOffsetX ?? 0} min={-100} max={100} step={1} fmt={v => `${v.toFixed(0)}%`} onChange={v => updateDevice(selId!, { screenOffsetX: v })} /></Row>
                     <Row label="Image Y"><Slider value={d.screenOffsetY ?? 0} min={-100} max={100} step={1} fmt={v => `${v.toFixed(0)}%`} onChange={v => updateDevice(selId!, { screenOffsetY: v })} /></Row>
                     <Row label="Image zoom"><Slider value={d.screenScale ?? 1} min={0.5} max={3} step={0.01} fmt={v => `${v.toFixed(2)}×`} onChange={v => updateDevice(selId!, { screenScale: v })} /></Row>
-                    <Row label="Image fit"><button onClick={() => updateDevice(selId!, { screenOffsetX: 0, screenOffsetY: 0, screenScale: 1 })} style={{ padding: '5px 8px', borderRadius: 5, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 10 }}>Reset</button></Row>
+                    <Row label="Image fit"><button onClick={() => updateDevice(selId!, { screenOffsetX: 0, screenOffsetY: 0, screenScale: 1 })} style={{ padding: '5px 8px', borderRadius: 'var(--uf-radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 10 }}>Reset</button></Row>
                   </>}
                 </div>
               )}
@@ -197,7 +197,7 @@ export default function RightSidebar() {
                       const isActive = (d.materialPreset ?? 'default') === id
                       return (
                         <button key={id} onClick={() => updateDevice(selId!, { materialPreset: id })}
-                          style={{ padding: '7px 4px', borderRadius: 6, border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)', background: isActive ? 'var(--accent-glow)' : 'var(--surface)', color: isActive ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--font-mono)', textAlign: 'center', transition: 'all 0.1s' }}
+                          style={{ padding: '7px 4px', borderRadius: 'var(--uf-radius-sm)', border: isActive ? '1px solid var(--accent-border)' : '1px solid var(--border)', background: isActive ? 'var(--accent-glow)' : 'var(--surface)', color: isActive ? 'var(--accent-text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--font-mono)', textAlign: 'center', transition: 'all 0.1s' }}
                           onMouseEnter={e => { if (!isActive) { (e.currentTarget).style.background = 'var(--surface-2)'; (e.currentTarget).style.color = 'var(--text)' } }}
                           onMouseLeave={e => { if (!isActive) { (e.currentTarget).style.background = 'var(--surface)'; (e.currentTarget).style.color = 'var(--text-muted)' } }}
                         >
@@ -224,7 +224,7 @@ export default function RightSidebar() {
                       value={sel.textConfig.content}
                       onChange={e => updateText(selId!, { content: e.target.value })}
                       rows={3}
-                      style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', fontSize: 12, padding: '6px 8px', fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+                      style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--uf-radius-sm)', color: 'var(--text)', fontSize: 12, padding: '6px 8px', fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
                       onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
                       onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
                     />
@@ -304,7 +304,7 @@ export default function RightSidebar() {
           <div style={{ padding: '0 10px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
             {(Object.keys(LIGHTING_CONFIGS) as LightingPreset[]).map(preset => (
               <button key={preset} onClick={() => setLighting({ preset, ...LIGHTING_RIGS[preset] })}
-                style={{ padding: '7px 6px', borderRadius: 6, border: lighting.preset === preset ? '1px solid var(--accent)' : '1px solid var(--border)', background: lighting.preset === preset ? 'var(--accent-glow)' : 'var(--surface)', color: lighting.preset === preset ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)', textAlign: 'center' }}
+                style={{ padding: '7px 6px', borderRadius: 'var(--uf-radius-sm)', border: lighting.preset === preset ? '1px solid var(--accent-border)' : '1px solid var(--border)', background: lighting.preset === preset ? 'var(--accent-glow)' : 'var(--surface)', color: lighting.preset === preset ? 'var(--accent-text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)', textAlign: 'center' }}
                 onMouseEnter={e => { if (lighting.preset !== preset) { (e.currentTarget).style.background = 'var(--surface-2)'; (e.currentTarget).style.color = 'var(--text)' } }}
                 onMouseLeave={e => { if (lighting.preset !== preset) { (e.currentTarget).style.background = 'var(--surface)'; (e.currentTarget).style.color = 'var(--text-muted)' } }}
               >
@@ -345,7 +345,7 @@ export default function RightSidebar() {
           <div style={{ padding: '4px 10px 8px', display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {BG_OPTIONS.map(opt => (
               <button key={opt.type} onClick={() => setBackground({ type: opt.type })}
-                style={{ padding: '5px 8px', borderRadius: 5, border: background.type === opt.type ? '1px solid var(--accent)' : '1px solid var(--border)', background: background.type === opt.type ? 'var(--accent-glow)' : 'var(--surface)', color: background.type === opt.type ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+                style={{ padding: '5px 8px', borderRadius: 'var(--uf-radius-sm)', border: background.type === opt.type ? '1px solid var(--accent-border)' : '1px solid var(--border)', background: background.type === opt.type ? 'var(--accent-glow)' : 'var(--surface)', color: background.type === opt.type ? 'var(--accent-text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)' }}
               >
                 {opt.label}
               </button>

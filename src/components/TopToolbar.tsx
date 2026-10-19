@@ -16,14 +16,14 @@ function Btn({ title, onClick, active, children, danger }: { title: string; onCl
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        minWidth: 28, height: 28, padding: '0 6px', borderRadius: 5,
-        border: active ? '1px solid var(--accent)' : '1px solid transparent',
-        background: active ? 'var(--accent-glow)' : 'transparent',
-        color: active ? 'var(--accent)' : danger ? 'var(--danger)' : 'var(--text-muted)',
-        cursor: 'pointer', fontSize: 11, fontFamily: 'var(--font-mono)',
+        minWidth: 32, height: 32, padding: '0 8px', borderRadius: 'var(--uf-radius-sm)',
+        border: active ? '1px solid var(--accent-border)' : '1px solid transparent',
+        background: active ? 'var(--accent-strong)' : 'transparent',
+        color: active ? '#fff' : danger ? 'var(--danger)' : 'var(--text-muted)',
+        cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-mono)',
         transition: 'all 0.1s', flexShrink: 0, gap: 4,
       }}
-      onMouseEnter={e => { if (!active) { (e.currentTarget).style.background = 'var(--surface)'; (e.currentTarget).style.color = danger ? 'var(--danger)' : 'var(--text)' } }}
+      onMouseEnter={e => { if (!active) { (e.currentTarget).style.background = 'var(--surface-2)'; (e.currentTarget).style.color = danger ? 'var(--danger)' : 'var(--text)' } }}
       onMouseLeave={e => { if (!active) { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = danger ? 'var(--danger)' : 'var(--text-muted)' } }}
     >
       {children}
@@ -88,30 +88,26 @@ export default function TopToolbar({ onExport }: { onExport: () => void }) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'mockframe-project.json'
+    a.download = 'uiforma-mockup.json'
     a.click()
     URL.revokeObjectURL(url)
   }
 
   return (
-    <div style={{ height: 44, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 2, background: 'var(--panel)', borderBottom: '1px solid var(--border)', flexShrink: 0, zIndex: 100 }}>
+    <div style={{ height: 52, display: 'flex', alignItems: 'center', padding: '0 12px 0 16px', gap: 2, background: 'var(--header)', borderBottom: '1px solid var(--bg)', flexShrink: 0, zIndex: 100 }}>
 
       {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginRight: 10, flexShrink: 0 }}>
-        <div style={{ width: 22, height: 22, background: 'var(--accent)', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-            <rect x="5" y="2" width="14" height="20" rx="3" /><rect x="9" y="5" width="6" height="11" rx="1" />
-          </svg>
-        </div>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>MockFrame</span>
-      </div>
+      <a href="https://uiforma.com" title="UIForma" style={{ display: 'flex', alignItems: 'center', gap: 10, marginRight: 12, flexShrink: 0, textDecoration: 'none' }}>
+        <img src="/uiforma-logo.svg" alt="UIForma" style={{ height: 22, width: 'auto', display: 'block' }} />
+        <span style={{ padding: '3px 7px', borderRadius: 'var(--uf-radius-sm)', background: 'var(--accent-glow)', border: '1px solid var(--accent-border)', color: 'var(--accent-text)', fontSize: 11, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>Mockup Studio</span>
+      </a>
 
       <Sep />
 
       {/* Tool selector */}
       {tools.map(t => (
         <Btn key={t.id} title={t.label} onClick={() => setTool(t.id)} active={activeTool === t.id}>
-          <span style={{ fontSize: 10, fontWeight: 700 }}>{t.key}</span>
+          <span style={{ fontSize: 12, fontWeight: 700 }}>{t.key}</span>
         </Btn>
       ))}
 
@@ -167,7 +163,7 @@ export default function TopToolbar({ onExport }: { onExport: () => void }) {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="3" width="8" height="8" rx="1" /><rect x="13" y="3" width="8" height="8" rx="1" /><rect x="3" y="13" width="8" height="8" rx="1" /><rect x="13" y="13" width="8" height="8" rx="1" />
         </svg>
-        <span style={{ fontSize: 10 }}>Templates</span>
+        <span style={{ fontSize: 11 }}>Templates</span>
       </Btn>
 
       <Sep />
@@ -178,13 +174,13 @@ export default function TopToolbar({ onExport }: { onExport: () => void }) {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
         </svg>
-        <span style={{ fontSize: 10 }}>Import</span>
+        <span style={{ fontSize: 11 }}>Import</span>
       </Btn>
       <Btn title="Save project as JSON" onClick={handleProjectExport}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
         </svg>
-        <span style={{ fontSize: 10 }}>Save</span>
+        <span style={{ fontSize: 11 }}>Save</span>
       </Btn>
 
       {/* Spacer */}
@@ -204,15 +200,15 @@ export default function TopToolbar({ onExport }: { onExport: () => void }) {
           <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
           <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
         </svg>
-        <span style={{ fontSize: 10 }}>{copyLabel}</span>
+        <span style={{ fontSize: 11 }}>{copyLabel}</span>
       </Btn>
 
       {/* Export PNG */}
       <button
         onClick={onExport}
-        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 500, transition: 'background 0.1s', flexShrink: 0 }}
-        onMouseEnter={e => { (e.currentTarget).style.background = 'var(--accent-hover)' }}
-        onMouseLeave={e => { (e.currentTarget).style.background = 'var(--accent)' }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 14px', borderRadius: 'var(--uf-radius-sm)', border: '1px solid var(--accent-border)', background: 'var(--accent-strong)', color: '#fff', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-mono)', fontWeight: 700, transition: 'background 0.1s', flexShrink: 0, marginLeft: 6 }}
+        onMouseEnter={e => { (e.currentTarget).style.background = 'var(--uf-primary-500)' }}
+        onMouseLeave={e => { (e.currentTarget).style.background = 'var(--accent-strong)' }}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />

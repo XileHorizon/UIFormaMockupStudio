@@ -231,7 +231,7 @@ export default function StudioMonitor3D({ device, transform, screenshot, screens
 
       {selected && (
         <RoundedBox args={[6.3, 3.97, 0.34]} radius={0.19} smoothness={5} position={[0, 0.85, 0]}>
-          <meshBasicMaterial color="#3b7ef8" wireframe transparent opacity={0.38} depthTest={false} />
+          <meshBasicMaterial color="#7f8cff" wireframe transparent opacity={0.38} depthTest={false} />
         </RoundedBox>
       )}
 

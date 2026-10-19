@@ -101,7 +101,7 @@ export default function IPadPro3D({ device, transform, screenshot, screenshotTyp
         <mesh>
           <boxGeometry args={[size.x * normalizedScale * 1.04, size.y * normalizedScale * 1.04, Math.max(size.z * normalizedScale * 1.25, 0.28)]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-          <Edges color="#3b7ef8" />
+          <Edges color="#7f8cff" />
         </mesh>
       )}
     </group>

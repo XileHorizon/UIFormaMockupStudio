@@ -81,7 +81,7 @@ export default function IMac2021ThreeD({ device, transform, screenshot, screensh
         <mesh>
           <boxGeometry args={[size.x * normalizedScale * 1.03, size.y * normalizedScale * 1.03, size.z * normalizedScale * 1.08]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-          <Edges color="#3b7ef8" />
+          <Edges color="#7f8cff" />
         </mesh>
       )}
     </group>
