@@ -58,8 +58,8 @@ function AddBtn({ label, onClick }: { label: string; onClick: () => void }) {
 function IconBtn({ title, onClick, disabled, children }: { title: string; onClick?: (e: React.MouseEvent) => void; disabled?: boolean; children: React.ReactNode }) {
   return (
     <button title={title} onClick={onClick} disabled={disabled} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 3, border: 'none', background: 'transparent', color: 'var(--text-dim)', cursor: disabled ? 'default' : 'pointer', padding: 0, opacity: disabled ? 0.3 : 1 }}
-      onMouseEnter={e => { if (!disabled) { (e.currentTarget).style.color = 'var(--text)'; (e.currentTarget).style.background = 'var(--surface-2)' } }}
-      onMouseLeave={e => { (e.currentTarget).style.color = 'var(--text-dim)'; (e.currentTarget).style.background = 'transparent' }}
+      onMouseEnter={e => { if (!disabled) (e.currentTarget).style.background = 'color-mix(in srgb, currentColor 14%, transparent)' }}
+      onMouseLeave={e => { (e.currentTarget).style.background = 'transparent' }}
     >{children}</button>
   )
 }
@@ -80,9 +80,9 @@ function ObjectRow({ obj, selected, index, total, onSelect, onRename, onToggleVi
   return (
     <div
       onClick={event => onSelect(event.shiftKey)}
-      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 6px 5px 10px', borderRadius: 'var(--uf-radius-sm)', margin: '0 6px', background: selected ? 'var(--accent-glow)' : 'transparent', border: selected ? '1px solid var(--accent-border)' : '1px solid transparent', cursor: 'pointer', opacity: obj.visible ? 1 : 0.4 }}
-      onMouseEnter={e => { if (!selected) (e.currentTarget).style.background = 'var(--surface)' }}
-      onMouseLeave={e => { if (!selected) (e.currentTarget).style.background = 'transparent' }}
+      className={`studio-object-row${selected ? ' is-selected' : ''}`}
+      aria-selected={selected}
+      style={{ display: 'flex', alignItems: 'center', gap: 4, minHeight: 32, padding: '4px 6px 4px 10px', borderRadius: 'var(--uf-radius-sm)', margin: '0 6px', fontFamily: 'var(--font-mono)', cursor: 'pointer', opacity: obj.visible ? 1 : 0.4 }}
     >
       <span style={{ color: selected ? 'var(--accent-text)' : 'var(--text-dim)', flexShrink: 0, display: 'flex' }}>{ET_ICONS[et]}</span>
       <div style={{ flex: 1, minWidth: 0 }}>

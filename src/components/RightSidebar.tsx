@@ -111,7 +111,6 @@ export default function RightSidebar() {
 
               <Section title="Material" {...section('material')}>
                 <ButtonBlock
-                  className="studio-block-3"
                   label="Material"
                   value={d.materialPreset ?? 'default'}
                   onValueChange={id => updateDevice(selId!, { materialPreset: id })}

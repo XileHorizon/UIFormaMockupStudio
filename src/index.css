@@ -66,6 +66,8 @@
   --uf-select-padding-x: 8px;
   --uf-select-font: 400 12px/1 var(--uf-font-control);
   --uf-select-gap: 4px;
+  --uf-field-row-item-inset: 3px;
+  --uf-text-field-content-gap: 2px;
   --uf-type-label: 400 11px/1.2 var(--uf-font-control);
 }
 
@@ -219,3 +221,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .studio-template__copy span { color: var(--text-muted); font: 400 11px/1.4 var(--uf-font-body); }
 .studio-template__copy small { align-self: flex-start; margin-top: 4px; padding: 2px 6px; border-radius: var(--uf-radius-xs); background: var(--accent-glow); color: var(--accent-text); font: 400 10px/1.4 var(--uf-font-control); }
 .studio-modal .uf-sidebar-slider__control { max-width: none; }
+
+/*
+ * Selected state = the Kit's Primary compact button (Figma 207:2982): filled action-primary with page-colour text.
+ * Applied to preset blocks, toolbar toggles, and scene rows so every "this one is chosen" looks the same.
+ */
+.uf-button-block > .uf-button[aria-pressed='true'],
+.uf-button.studio-toolbar-button[aria-pressed='true'] {
+  border-color: var(--uf-button-primary-background);
+  background: var(--uf-button-primary-background);
+  color: var(--uf-button-primary-text);
+}
+.uf-button-block > .uf-button[aria-pressed='true']:hover,
+.uf-button.studio-toolbar-button[aria-pressed='true']:hover { background: var(--uf-button-primary-background-hover); color: var(--uf-button-primary-text); }
+.uf-button-block > .uf-button[aria-pressed='true']:active { background: var(--uf-button-primary-background-pressed); }
+.studio-object-row { border: 1px solid transparent; }
+.studio-object-row:hover { background: var(--surface); }
+.studio-object-row.is-selected { border-color: var(--uf-button-primary-background); background: var(--uf-button-primary-background); color: var(--uf-button-primary-text); }
+.studio-object-row.is-selected * { color: inherit !important; }
