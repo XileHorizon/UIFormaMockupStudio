@@ -40,7 +40,7 @@ function Editor() {
   }, [selectedObject, setTool, toggleExportModal, toggleTemplatesModal, duplicateObject, removeObject])
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
+    <div className="studio-ui" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
       <TopToolbar onExport={toggleExportModal} />
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>

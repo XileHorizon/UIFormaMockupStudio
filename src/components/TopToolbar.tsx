@@ -1,6 +1,8 @@
 import { useRef, useState, useEffect, type ChangeEvent } from 'react'
 import { useEditor, encodeProjectToUrl, decodeProjectFromUrl } from '../store'
 import type { AppState } from '../types'
+import { IconDownload } from '@tabler/icons-react'
+import { Button, SegmentedControl } from '../kit'
 
 const tools = [
   { id: 'select' as const, key: 'V', label: 'Select (V)' },
@@ -10,29 +12,28 @@ const tools = [
 ]
 
 function Btn({ title, onClick, active, children, danger }: { title: string; onClick?: () => void; children: React.ReactNode; active?: boolean; danger?: boolean }) {
+  // Kit surface button; an svg child becomes the leading icon and any text becomes the label.
+  const parts = Array.isArray(children) ? children : [children]
+  const icon = parts.find(part => (part as { type?: unknown })?.type === 'svg')
+  const label = parts.filter(part => part !== icon)
   return (
-    <button
+    <Button
+      appearance="surface"
+      size="compact"
       title={title}
+      aria-label={title}
+      aria-pressed={active || undefined}
       onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        minWidth: 32, height: 32, padding: '0 8px', borderRadius: 'var(--uf-radius-sm)',
-        border: active ? '1px solid var(--accent-border)' : '1px solid transparent',
-        background: active ? 'var(--accent-strong)' : 'transparent',
-        color: active ? '#fff' : danger ? 'var(--danger)' : 'var(--text-muted)',
-        cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-mono)',
-        transition: 'all 0.1s', flexShrink: 0, gap: 4,
-      }}
-      onMouseEnter={e => { if (!active) { (e.currentTarget).style.background = 'var(--surface-2)'; (e.currentTarget).style.color = danger ? 'var(--danger)' : 'var(--text)' } }}
-      onMouseLeave={e => { if (!active) { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = danger ? 'var(--danger)' : 'var(--text-muted)' } }}
+      leadingIcon={icon}
+      className={`studio-toolbar-button${danger ? ' is-danger' : ''}`}
     >
-      {children}
-    </button>
+      {label.length ? label : null}
+    </Button>
   )
 }
 
 function Sep() {
-  return <div style={{ width: 1, height: 18, background: 'var(--border)', margin: '0 3px', flexShrink: 0 }} />
+  return <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 6px', flexShrink: 0 }} />
 }
 
 export default function TopToolbar({ onExport }: { onExport: () => void }) {
@@ -94,7 +95,7 @@ export default function TopToolbar({ onExport }: { onExport: () => void }) {
   }
 
   return (
-    <div style={{ height: 52, display: 'flex', alignItems: 'center', padding: '0 12px 0 16px', gap: 2, background: 'var(--header)', borderBottom: '1px solid var(--bg)', flexShrink: 0, zIndex: 100 }}>
+    <div style={{ height: 52, display: 'flex', alignItems: 'center', padding: '0 12px 0 16px', gap: 4, background: 'var(--header)', borderBottom: '1px solid var(--bg)', flexShrink: 0, zIndex: 100 }}>
 
       {/* Logo */}
       <a href="https://uiforma.com" title="UIForma" style={{ display: 'flex', alignItems: 'center', gap: 10, marginRight: 12, flexShrink: 0, textDecoration: 'none' }}>
@@ -105,11 +106,12 @@ export default function TopToolbar({ onExport }: { onExport: () => void }) {
       <Sep />
 
       {/* Tool selector */}
-      {tools.map(t => (
-        <Btn key={t.id} title={t.label} onClick={() => setTool(t.id)} active={activeTool === t.id}>
-          <span style={{ fontSize: 12, fontWeight: 700 }}>{t.key}</span>
-        </Btn>
-      ))}
+      <SegmentedControl
+        label="Tool"
+        value={activeTool}
+        onValueChange={setTool}
+        items={tools.map(t => ({ value: t.id, label: <span title={t.label}>{t.key}</span> }))}
+      />
 
       <Sep />
 
@@ -163,7 +165,7 @@ export default function TopToolbar({ onExport }: { onExport: () => void }) {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="3" width="8" height="8" rx="1" /><rect x="13" y="3" width="8" height="8" rx="1" /><rect x="3" y="13" width="8" height="8" rx="1" /><rect x="13" y="13" width="8" height="8" rx="1" />
         </svg>
-        <span style={{ fontSize: 11 }}>Templates</span>
+        Templates
       </Btn>
 
       <Sep />
@@ -174,13 +176,13 @@ export default function TopToolbar({ onExport }: { onExport: () => void }) {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
         </svg>
-        <span style={{ fontSize: 11 }}>Import</span>
+        Import
       </Btn>
       <Btn title="Save project as JSON" onClick={handleProjectExport}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
         </svg>
-        <span style={{ fontSize: 11 }}>Save</span>
+        Save
       </Btn>
 
       {/* Spacer */}
@@ -200,21 +202,11 @@ export default function TopToolbar({ onExport }: { onExport: () => void }) {
           <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
           <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
         </svg>
-        <span style={{ fontSize: 11 }}>{copyLabel}</span>
+        {copyLabel}
       </Btn>
 
       {/* Export PNG */}
-      <button
-        onClick={onExport}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 14px', borderRadius: 'var(--uf-radius-sm)', border: '1px solid var(--accent-border)', background: 'var(--accent-strong)', color: '#fff', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-mono)', fontWeight: 700, transition: 'background 0.1s', flexShrink: 0, marginLeft: 6 }}
-        onMouseEnter={e => { (e.currentTarget).style.background = 'var(--uf-primary-500)' }}
-        onMouseLeave={e => { (e.currentTarget).style.background = 'var(--accent-strong)' }}
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
-        Export
-      </button>
+      <Button appearance="primary" size="compact" leadingIcon={<IconDownload />} onClick={onExport} style={{ marginLeft: 6 }}>Export</Button>
     </div>
   )
 }

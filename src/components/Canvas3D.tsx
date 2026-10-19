@@ -13,6 +13,8 @@ import ImportedGLBDevice from './ImportedGLBDevice'
 import TextElement from './TextElement'
 import Shape3D from './Shape3D'
 import type { SceneObject } from '../types'
+import { IconFocusCentered, IconMinus, IconPlus } from '@tabler/icons-react'
+import { Button, SegmentedControl } from '../kit'
 
 function getCanvasBackground(bg: { type: string; color: string; gradientFrom: string; gradientTo: string; gradientAngle: number }): string {
   switch (bg.type) {
@@ -180,23 +182,17 @@ const NAV_VIEWS: { view: CameraView; label: string; title: string }[] = [
 ]
 
 function ViewNavigator({ activeView }: { activeView: CameraView | null }) {
-  const iconProps = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
   return (
-    <div data-export-exclude="true" className="view-nav" role="toolbar" aria-label="Camera" onPointerDown={e => e.stopPropagation()}>
-      <button title="Reset view (0 or double-click)" aria-label="Reset view" onClick={() => requestCameraView('reset')}>
-        <svg {...iconProps}><path d="M3 12a9 9 0 1 0 3-6.7" /><polyline points="3 3 3 9 9 9" /></svg>
-      </button>
-      <hr />
-      {NAV_VIEWS.map(({ view, label, title }) => (
-        <button key={view} title={title} aria-pressed={activeView === view} onClick={() => requestCameraView(view)}>{label}</button>
-      ))}
-      <hr />
-      <button title="Zoom out (-)" aria-label="Zoom out" onClick={() => requestCameraView('zoom-out')}>
-        <svg {...iconProps}><line x1="5" y1="12" x2="19" y2="12" /></svg>
-      </button>
-      <button title="Zoom in (+)" aria-label="Zoom in" onClick={() => requestCameraView('zoom-in')}>
-        <svg {...iconProps}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-      </button>
+    <div data-export-exclude="true" className="view-nav" role="toolbar" aria-label="Camera" onPointerDown={e => e.stopPropagation()} onDoubleClick={e => e.stopPropagation()}>
+      <Button appearance="surface" size="compact" className="studio-toolbar-button" title="Reset view (0 or double-click)" aria-label="Reset view" leadingIcon={<IconFocusCentered />} onClick={() => requestCameraView('reset')} />
+      <SegmentedControl
+        label="Camera view"
+        value={activeView ?? ('' as CameraView)}
+        onValueChange={requestCameraView}
+        items={NAV_VIEWS.map(({ view, label, title }) => ({ value: view, label: <span title={title}>{label}</span> }))}
+      />
+      <Button appearance="surface" size="compact" className="studio-toolbar-button" title="Zoom out (-)" aria-label="Zoom out" leadingIcon={<IconMinus />} onClick={() => requestCameraView('zoom-out')} />
+      <Button appearance="surface" size="compact" className="studio-toolbar-button" title="Zoom in (+)" aria-label="Zoom in" leadingIcon={<IconPlus />} onClick={() => requestCameraView('zoom-in')} />
     </div>
   )
 }

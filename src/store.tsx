@@ -50,8 +50,8 @@ const initialState: AppState = {
   background: {
     type: 'gradient-linear',
     color: '#0a0a14',
-    gradientFrom: '#0f0c29',
-    gradientTo: '#302b63',
+    gradientFrom: '#1e1f23',
+    gradientTo: '#280084',
     gradientAngle: 145,
   },
   lighting: {

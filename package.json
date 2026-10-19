@@ -13,8 +13,10 @@
     "format": "oxfmt"
   },
   "dependencies": {
+    "@fontsource/space-mono": "^5.3.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.7.0",
+    "@tabler/icons-react": "^3.49.0",
     "html-to-image": "^1.11.13",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

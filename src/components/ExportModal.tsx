@@ -1,5 +1,8 @@
 import { useState, useRef } from 'react'
 import { toPng, toJpeg, toBlob } from 'html-to-image'
+import { IconCheck, IconClipboard, IconDownload, IconX } from '@tabler/icons-react'
+import { Button, ButtonBlock, SidebarSlider } from '../kit'
+import { Hint, Section, SwitchRow } from './studio-ui'
 import { useEditor } from '../store'
 
 interface Props {
@@ -149,7 +152,7 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
       }
 
       const link = document.createElement('a')
-      link.download = `mockframe-export.${format === 'jpeg' ? 'jpg' : format}`
+      link.download = `uiforma-mockup.${format === 'jpeg' ? 'jpg' : format}`
       link.href = dataUrl
       link.click()
       setDone(true)
@@ -192,214 +195,48 @@ export default function ExportModal({ canvasRef, onClose }: Props) {
   const estimatedMegapixels = (outputWidth * outputHeight / 1_000_000).toFixed(1)
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="export-dialog-title"
-        style={{
-          background: 'var(--panel)',
-          border: '1px solid var(--border)',
-          borderRadius: 12,
-          width: 560,
-          maxWidth: 'calc(100vw - 32px)',
-          maxHeight: '88vh',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
-          <span id="export-dialog-title" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Export</span>
-          <button
-            onClick={onClose}
-            aria-label="Close export dialog"
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, borderRadius: 4 }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
+    <div className="studio-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div role="dialog" aria-modal="true" aria-labelledby="export-dialog-title" className="studio-modal" style={{ width: 560 }}>
+        <div className="studio-modal__header">
+          <h2 id="export-dialog-title">Export</h2>
+          <Button appearance="surface" size="compact" className="studio-toolbar-button" aria-label="Close export dialog" leadingIcon={<IconX />} onClick={onClose} />
         </div>
 
-        {/* Body */}
-        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', flex: 1, minHeight: 0, scrollbarGutter: 'stable' }}>
-          {/* Format */}
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
-              Format
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {formats.map(f => (
-                <button
-                  key={f.id}
-                  onClick={() => setFormat(f.id)}
-                  aria-pressed={format === f.id}
-                  style={{
-                    flex: 1,
-                    padding: '7px 0',
-                    borderRadius: 6,
-                    border: format === f.id ? '1px solid var(--accent-border)' : '1px solid var(--border)',
-                    background: format === f.id ? 'var(--accent-glow)' : 'var(--surface)',
-                    color: format === f.id ? 'var(--accent-text)' : 'var(--text-muted)',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    fontFamily: 'var(--font-mono)',
-                    transition: 'all 0.1s',
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-            {format === 'png' && (
-              <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6, margin: '6px 0 0' }}>
-                Supports transparent backgrounds.
-              </p>
-            )}
+        <div className="studio-modal__body">
+          <div className="studio-field">
+            <span className="studio-field__label">Format</span>
+            <ButtonBlock className="studio-block-3" label="Format" value={format} onValueChange={setFormat} items={formats.map(f => ({ value: f.id, label: f.label }))} />
+            <Hint>{format === 'png' ? 'PNG keeps transparent backgrounds.' : `${format === 'jpeg' ? 'JPG' : 'WebP'} has no transparency; the background is flattened.`}</Hint>
           </div>
 
-          {/* Output scale */}
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
-              <span>Output scale</span><span style={{ color: 'var(--accent)' }}>{scale.toFixed(1)}×</span>
-            </div>
-            <input aria-label="Output scale" type="range" min={1} max={8} step={0.5} value={scale} onChange={event => setScale(Number(event.target.value))} style={{ width: '100%' }} />
-            <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 5, fontFamily: 'var(--font-mono)' }}>{outputWidth} × {outputHeight} · {estimatedMegapixels} MP</div>
+          <div className="studio-field">
+            <SidebarSlider label="Output scale" value={scale} min={1} max={8} step={0.5} formatValue={v => `${v.toFixed(1)}×`} onValueChange={setScale} />
+            <Hint>{outputWidth} × {outputHeight} · {estimatedMegapixels} MP · no watermark</Hint>
           </div>
 
-          <button aria-expanded={showAdvanced} onClick={() => setShowAdvanced(value => !value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, textAlign: 'left' }}>
-            {showAdvanced ? '▾' : '▸'} Advanced GPU rendering
-          </button>
+          <Section title="Advanced GPU rendering" spacing="tight" open={showAdvanced} onOpenChange={setShowAdvanced}>
+            <SwitchRow label="Ray tracing" checked={rayTracing} onCheckedChange={setRayTracing} />
+            {rayTracing && <>
+              <Hint>Experimental progressive GPU path tracing.</Hint>
+              <SidebarSlider label="Samples" value={raySamples} min={8} max={512} step={8} formatValue={v => String(v)} onValueChange={setRaySamples} />
+              <SidebarSlider label="Bounces" value={rayBounces} min={1} max={12} step={1} formatValue={v => String(v)} onValueChange={setRayBounces} />
+              <SwitchRow label="Reduce speckles" checked={reduceFireflies} onCheckedChange={setReduceFireflies} />
+            </>}
+            <SidebarSlider label="Supersample" value={gpuDpr} min={1} max={4} step={0.5} formatValue={v => `${v.toFixed(1)}×`} onValueChange={setGpuDpr} />
+            <SidebarSlider label="Shadow res" value={shadowLevel} min={1} max={3} step={1} formatValue={v => `${2 ** (v + 9)}px`} onValueChange={setShadowLevel} />
+            {format !== 'png' && <SidebarSlider label="Quality" value={quality} min={50} max={100} step={1} formatValue={v => `${v}%`} onValueChange={setQuality} />}
+            <Hint>Supersampling raises the real Three.js render resolution before capture. 4× can use a lot of GPU memory.</Hint>
+            <Button appearance="secondary" size="compact" onClick={() => { setScale(4); setGpuDpr(4); setShadowLevel(3); setQuality(100); setRaySamples(256); setReduceFireflies(true) }}>Max GPU preset</Button>
+          </Section>
 
-          {showAdvanced && <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: 12, borderRadius: 8, border: '1px solid var(--border-subtle)', background: 'var(--surface)' }}>
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, fontSize: 10, color: 'var(--text-muted)' }}>
-              <span><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 2 }}>Ray tracing</strong>Experimental progressive GPU path tracing</span>
-              <input type="checkbox" checked={rayTracing} onChange={event => setRayTracing(event.target.checked)} />
-            </label>
-            {rayTracing && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, paddingBottom: 12, borderBottom: '1px solid var(--border-subtle)' }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Samples</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{raySamples}</span></div>
-                <input aria-label="Ray tracing samples" type="range" min={8} max={512} step={8} value={raySamples} onChange={event => setRaySamples(Number(event.target.value))} style={{ width: '100%' }} />
-              </div>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, fontSize: 10, color: 'var(--text-muted)' }}>
-                <span><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 2 }}>Reduce speckles</strong>Gently filters bright fireflies without crushing metal reflections</span>
-                <input type="checkbox" checked={reduceFireflies} onChange={event => setReduceFireflies(event.target.checked)} />
-              </label>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Light bounces</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{rayBounces}</span></div>
-                <input aria-label="Ray tracing light bounces" type="range" min={1} max={12} step={1} value={rayBounces} onChange={event => setRayBounces(Number(event.target.value))} style={{ width: '100%' }} />
-              </div>
-            </div>}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>GPU supersampling</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{gpuDpr.toFixed(1)}×</span></div>
-                <input aria-label="GPU supersampling" type="range" min={1} max={4} step={0.5} value={gpuDpr} onChange={event => setGpuDpr(Number(event.target.value))} style={{ width: '100%' }} />
-                <div style={{ fontSize: 9, color: 'var(--text-dim)', lineHeight: 1.4 }}>Raises the actual Three.js render resolution before capture. 4× can use substantial GPU memory.</div>
-              </div>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Shadow resolution</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{2 ** (shadowLevel + 9)}px</span></div>
-                <input aria-label="Shadow resolution" type="range" min={1} max={3} step={1} value={shadowLevel} onChange={event => setShadowLevel(Number(event.target.value))} style={{ width: '100%' }} />
-              </div>
-              {format !== 'png' && <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}><span>Compression quality</span><span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{quality}%</span></div>
-                <input aria-label="Compression quality" type="range" min={50} max={100} step={1} value={quality} onChange={event => setQuality(Number(event.target.value))} style={{ width: '100%' }} />
-              </div>}
-            </div>
-            <button onClick={() => { setScale(4); setGpuDpr(4); setShadowLevel(3); setQuality(100); setRaySamples(256); setReduceFireflies(true) }} style={{ padding: '7px 9px', borderRadius: 5, border: '1px solid var(--accent-border)', background: 'var(--accent-glow)', color: 'var(--accent)', cursor: 'pointer', fontSize: 10, fontWeight: 600 }}>Max GPU preset</button>
-          </div>}
-
-          {error && <div role="alert" style={{ padding: '8px 10px', borderRadius: 6, background: 'rgba(255,70,70,.08)', border: '1px solid rgba(255,90,90,.3)', color: 'var(--danger)', fontSize: 10, lineHeight: 1.4 }}>{error}</div>}
-
-          {/* Info row */}
-          <div style={{ display: 'flex', gap: 10 }}>
-            {[
-              { label: 'Watermark', value: 'None' },
-              { label: 'Transparent BG', value: format === 'png' ? 'Yes' : 'No' },
-            ].map(item => (
-              <div key={item.label} style={{ flex: 1, background: 'var(--surface)', borderRadius: 6, padding: '8px 10px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginBottom: 2 }}>{item.label}</div>
-                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)' }}>{item.value}</div>
-              </div>
-            ))}
-          </div>
+          {error && <div role="alert" className="studio-alert">{error}</div>}
         </div>
 
-        {/* Footer */}
-        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
-          <button
-            onClick={handleCopyToClipboard}
-            disabled={exporting}
-            style={{
-              flex: 0,
-              padding: '8px 14px',
-              borderRadius: 6,
-              border: '1px solid var(--border)',
-              background: 'var(--surface)',
-              color: 'var(--text-muted)',
-              cursor: exporting ? 'wait' : 'pointer',
-              fontSize: 12,
-              fontWeight: 500,
-              whiteSpace: 'nowrap',
-              transition: 'all 0.1s',
-            }}
-          >
-            Copy to Clipboard
-          </button>
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            style={{
-              flex: 1,
-              padding: '8px 16px',
-              borderRadius: 6,
-              border: 'none',
-              background: done ? 'var(--success)' : 'var(--accent)',
-              color: '#fff',
-              cursor: exporting ? 'wait' : 'pointer',
-              fontSize: 12,
-              fontWeight: 600,
-              transition: 'all 0.15s',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-            }}
-          >
-            {exporting ? (
-              <>{renderProgress ?? 'Exporting...'}</>
-            ) : done ? (
-              <>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                Downloaded
-              </>
-            ) : (
-              <>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Download {format.toUpperCase()}
-              </>
-            )}
-          </button>
+        <div className="studio-modal__footer">
+          <Button appearance="surface" size="compact" leadingIcon={<IconClipboard />} disabled={exporting} onClick={handleCopyToClipboard}>Copy</Button>
+          <Button appearance="primary" size="compact" style={{ flex: 1 }} loading={exporting} leadingIcon={done ? <IconCheck /> : <IconDownload />} onClick={handleExport}>
+            {exporting ? (renderProgress ?? 'Exporting…') : done ? 'Downloaded' : `Download ${format === 'jpeg' ? 'JPG' : format.toUpperCase()}`}
+          </Button>
         </div>
       </div>
     </div>

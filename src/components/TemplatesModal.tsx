@@ -1,4 +1,7 @@
 import { useEditor } from '../store'
+import { IconX } from '@tabler/icons-react'
+import { Button } from '../kit'
+import { Hint } from './studio-ui'
 import { TEMPLATES } from '../types'
 
 const TEMPLATE_PREVIEWS: Record<string, React.ReactNode> = {
@@ -101,50 +104,26 @@ export default function TemplatesModal() {
   const { loadTemplate, toggleTemplatesModal } = useEditor()
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-      onClick={e => { if (e.target === e.currentTarget) toggleTemplatesModal() }}
-    >
-      <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 14, width: 760, maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+    <div className="studio-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) toggleTemplatesModal() }}>
+      <div role="dialog" aria-modal="true" aria-labelledby="templates-dialog-title" className="studio-modal" style={{ width: 800, maxHeight: '82vh' }}>
+        <div className="studio-modal__header">
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Templates</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Start from a proven composition — all templates are editable</div>
+            <h2 id="templates-dialog-title">Templates</h2>
+            <Hint>Start from a composition. Everything stays editable.</Hint>
           </div>
-          <button onClick={toggleTemplatesModal} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 6, borderRadius: 5 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
+          <Button appearance="surface" size="compact" className="studio-toolbar-button" aria-label="Close templates" leadingIcon={<IconX />} onClick={toggleTemplatesModal} />
         </div>
-
-        {/* Grid */}
-        <div style={{ overflowY: 'auto', padding: 20 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-            {TEMPLATES.map(tpl => (
-              <button
-                key={tpl.id}
-                onClick={() => loadTemplate(tpl.id)}
-                style={{ display: 'flex', flexDirection: 'column', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', overflow: 'hidden', transition: 'all 0.15s', textAlign: 'left', padding: 0 }}
-                onMouseEnter={e => { (e.currentTarget).style.borderColor = 'var(--accent)'; (e.currentTarget).style.transform = 'translateY(-2px)'; (e.currentTarget).style.boxShadow = '0 8px 24px rgba(0,0,0,0.4)' }}
-                onMouseLeave={e => { (e.currentTarget).style.borderColor = 'var(--border)'; (e.currentTarget).style.transform = 'translateY(0)'; (e.currentTarget).style.boxShadow = 'none' }}
-              >
-                {/* Preview thumbnail */}
-                <div style={{ height: 100, background: TEMPLATE_BG_COLORS[tpl.id] ?? '#0a0b0e', position: 'relative', overflow: 'hidden' }}>
-                  {TEMPLATE_PREVIEWS[tpl.id]}
-                </div>
-                {/* Label */}
-                <div style={{ padding: '10px 12px 12px' }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>{tpl.name}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.4 }}>{tpl.description}</div>
-                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 3, border: '1px solid var(--border-subtle)' }}>
-                      {tpl.objects.length} object{tpl.objects.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+        <div className="studio-template-grid">
+          {TEMPLATES.map(tpl => (
+            <button key={tpl.id} type="button" className="studio-template" onClick={() => loadTemplate(tpl.id)}>
+              <span className="studio-template__preview" style={{ background: TEMPLATE_BG_COLORS[tpl.id] ?? 'var(--bg)' }}>{TEMPLATE_PREVIEWS[tpl.id]}</span>
+              <span className="studio-template__copy">
+                <strong>{tpl.name}</strong>
+                <span>{tpl.description}</span>
+                <small>{tpl.objects.length} object{tpl.objects.length !== 1 ? 's' : ''}</small>
+              </span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

@@ -1,83 +1,19 @@
 import { useState } from 'react'
+import { IconRefresh } from '@tabler/icons-react'
 import { useEditor } from '../store'
 import type { LightingPreset, LightingConfig, BackgroundType, DeviceColor, MaterialPresetId } from '../types'
 import { LIGHTING_CONFIGS, MATERIAL_PRESETS } from '../types'
+import { Button, ButtonBlock, FieldRow, NumberField, SegmentedControl, SidebarSlider, SwatchGroup, TextArea } from '../kit'
+import { ColorField, Hint, PropRow, Section, SwitchRow } from './studio-ui'
 
-// ── Primitives ────────────────────────────────────────────────────────────────
-
-function SectionLabel({ children, collapsible, open, onToggle }: { children: React.ReactNode; collapsible?: boolean; open?: boolean; onToggle?: () => void }) {
-  return (
-    <div style={{ padding: '10px 14px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: collapsible ? 'pointer' : 'default' }} onClick={collapsible ? onToggle : undefined}>
-      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-hover)', fontFamily: 'var(--font-mono)' }}>{children}</span>
-      {collapsible && <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="var(--accent-hover)" strokeWidth="1.5" style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}><path d="M2 4l3 3 3-3" /></svg>}
-    </div>
-  )
+function Num({ label, value, step = 1, suffix, onChange }: { label: string; value: number; step?: number; suffix?: string; onChange: (value: number) => void }) {
+  return <NumberField label={label} value={value.toFixed(step < 1 ? 2 : 1)} step={step} supportingText={suffix} onChange={event => onChange(parseFloat(event.currentTarget.value) || 0)} />
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', padding: '4px 14px', gap: 8 }}>
-      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', width: 84, flexShrink: 0 }}>{label}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
-    </div>
-  )
-}
-
-function Slider({ value, min, max, step = 0.01, onChange, fmt }: { value: number; min: number; max: number; step?: number; onChange: (v: number) => void; fmt?: (v: number) => string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(parseFloat(e.target.value))} style={{ flex: 1, minWidth: 0, background: `linear-gradient(90deg, var(--accent) ${((value - min) / (max - min)) * 100}%, var(--surface-2) 0)` }} />
-      <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', minWidth: 40, flexShrink: 0, textAlign: 'right' }}>{fmt ? fmt(value) : value.toFixed(2)}</span>
-    </div>
-  )
-}
-
-function NumberInput({ value, onChange, step = 1, suffix = '' }: { value: number; onChange: (v: number) => void; step?: number; suffix?: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-      <input type="number" value={value.toFixed(step < 1 ? 2 : 1)} step={step} onChange={e => onChange(parseFloat(e.target.value) || 0)} style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--uf-radius-sm)', color: 'var(--text)', fontSize: 11, fontFamily: 'var(--font-mono)', padding: '5px 7px', outline: 'none', width: '100%' }}
-        onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
-        onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
-      />
-      {suffix && <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>{suffix}</span>}
-    </div>
-  )
-}
-
-function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div onClick={() => onChange(!value)} style={{ width: 32, height: 18, borderRadius: 9, background: value ? 'var(--accent-strong)' : 'var(--uf-primary-900)', border: '1px solid ' + (value ? 'var(--accent-strong)' : 'var(--uf-primary-900)'), cursor: 'pointer', position: 'relative', transition: 'all 0.15s', flexShrink: 0 }}>
-      <div style={{ position: 'absolute', top: 2, left: value ? 15 : 2, width: 12, height: 12, borderRadius: '50%', background: 'var(--uf-neutral-0)', transition: 'left 0.15s' }} />
-    </div>
-  )
-}
-
-function ColorPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <input type="color" value={value.startsWith('rgba') ? '#ffffff' : value} onChange={e => onChange(e.target.value)} style={{ width: 32, height: 26, borderRadius: 'var(--uf-radius-sm)', border: '1px solid var(--border)', background: 'none', cursor: 'pointer', padding: 2 }} />
-      <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>{value.startsWith('rgba') ? value.slice(0, 20) + '…' : value.toUpperCase()}</span>
-    </div>
-  )
-}
-
-function ColorSwatch({ color, selected, onClick, title }: { color: string; selected: boolean; onClick: () => void; title: string }) {
-  return <div title={title} onClick={onClick} style={{ width: 20, height: 20, borderRadius: '50%', background: color, cursor: 'pointer', border: selected ? '2px solid var(--accent)' : '2px solid transparent', outline: selected ? '1px solid var(--accent-border)' : 'none', flexShrink: 0 }} />
-}
-
-function Sep() { return <div style={{ height: 1, background: 'var(--border-subtle)' }} /> }
-
-function ChipRow<T extends string>({ options, value, onChange }: { options: { id: T; label: string }[]; value: T; onChange: (v: T) => void }) {
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '2px 14px' }}>
-      {options.map(opt => (
-        <button key={opt.id} onClick={() => onChange(opt.id)} style={{ padding: '5px 8px', borderRadius: 'var(--uf-radius-sm)', border: value === opt.id ? '1px solid var(--accent-border)' : '1px solid var(--border)', background: value === opt.id ? 'var(--accent-glow)' : 'var(--surface)', color: value === opt.id ? 'var(--accent-text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  )
-}
+const pct = (v: number) => `${(v * 100).toFixed(0)}%`
+const deg = (v: number) => `${v.toFixed(0)}°`
+const px = (v: number) => `${v}px`
+const two = (v: number) => v.toFixed(2)
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -119,249 +55,148 @@ export default function RightSidebar() {
   const { background, lighting } = state
 
   const [open, setOpen] = useState({ transform: true, element: true, material: false, lighting: true, shadow: false, background: true })
-  const toggle = (k: keyof typeof open) => setOpen(s => ({ ...s, [k]: !s[k] }))
+  const section = (k: keyof typeof open) => ({ open: open[k], onOpenChange: (next: boolean) => setOpen(s => ({ ...s, [k]: next })) })
 
   const sel = selectedObject
   const selId = sel?.id ?? null
   const t = sel?.transform
   const d = sel?.device
   const et = sel?.elementType ?? 'device'
+  const deviceSwatch = DEVICE_COLOR_OPTIONS.find(c => c.id === d?.color)?.swatch
 
   return (
-    <div style={{ width: 280, flexShrink: 0, background: 'var(--panel)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
-
+    <aside className="studio-panel" style={{ width: 300, flexShrink: 0, borderLeft: '1px solid var(--border)' }}>
       {sel && t && typeof t.rotX === 'number' ? (
         <>
-          {/* Transform */}
-          <SectionLabel collapsible open={open.transform} onToggle={() => toggle('transform')}>Transform</SectionLabel>
-          {open.transform && (
-            <div style={{ paddingBottom: 10 }}>
-              <div style={{ padding: '4px 14px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5, marginBottom: 8 }}>
-                  {(['rotX', 'rotY', 'rotZ'] as const).map((k, i) => (
-                    <div key={k}>
-                      <div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: 3 }}>Rot {['X','Y','Z'][i]}</div>
-                      <NumberInput value={t[k]} step={1} suffix="°" onChange={v => updateTransform(selId!, { [k]: v })} />
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
-                  <div><div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: 3 }}>Pos X</div><NumberInput value={t.posX} onChange={v => updateTransform(selId!, { posX: v })} /></div>
-                  <div><div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: 3 }}>Pos Y</div><NumberInput value={t.posY} onChange={v => updateTransform(selId!, { posY: v })} /></div>
-                  <div><div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: 3 }}>Pos Z</div><NumberInput value={t.posZ ?? 0} onChange={v => updateTransform(selId!, { posZ: v })} /></div>
-                </div>
-                <div style={{ marginTop: 6 }}><div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: 3 }}>Scale</div><NumberInput value={t.scale} step={0.1} onChange={v => updateTransform(selId!, { scale: Math.max(0.1, v) })} /></div>
-              </div>
-            </div>
-          )}
+          <Section title="Transform" spacing="tight" {...section('transform')}>
+            <FieldRow>
+              <Num label="Rot X" value={t.rotX} suffix="°" onChange={v => updateTransform(selId!, { rotX: v })} />
+              <Num label="Rot Y" value={t.rotY} suffix="°" onChange={v => updateTransform(selId!, { rotY: v })} />
+              <Num label="Rot Z" value={t.rotZ} suffix="°" onChange={v => updateTransform(selId!, { rotZ: v })} />
+            </FieldRow>
+            <FieldRow>
+              <Num label="Pos X" value={t.posX} onChange={v => updateTransform(selId!, { posX: v })} />
+              <Num label="Pos Y" value={t.posY} onChange={v => updateTransform(selId!, { posY: v })} />
+              <Num label="Pos Z" value={t.posZ ?? 0} onChange={v => updateTransform(selId!, { posZ: v })} />
+            </FieldRow>
+            <FieldRow>
+              <Num label="Scale" value={t.scale} step={0.1} onChange={v => updateTransform(selId!, { scale: Math.max(0.1, v) })} />
+            </FieldRow>
+          </Section>
 
-          <Sep />
-
-          {/* Element-specific properties */}
           {et === 'device' && d?.type && (
             <>
-              <SectionLabel collapsible open={open.element} onToggle={() => toggle('element')}>Device</SectionLabel>
-              {open.element && (
-                <div style={{ paddingBottom: 10 }}>
-                  <Row label="Color">
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                      {DEVICE_COLOR_OPTIONS.map(c => <ColorSwatch key={c.id} color={c.swatch} title={c.label} selected={d.color === c.id} onClick={() => updateDevice(selId!, { color: c.id })} />)}
-                    </div>
-                  </Row>
-                  {d.type === 'ipad-pro' && (
-                    <Row label="Orientation">
-                      <ChipRow options={[{ id: 'portrait', label: 'Port' }, { id: 'landscape', label: 'Land' }]} value={d.orientation} onChange={v => updateDevice(selId!, { orientation: v })} />
-                    </Row>
-                  )}
-                  <Row label="Shadow"><Toggle value={d.showShadow} onChange={v => updateDevice(selId!, { showShadow: v })} /></Row>
-                  <Row label="Reflection"><Toggle value={d.showReflection} onChange={v => updateDevice(selId!, { showReflection: v })} /></Row>
-                  <Row label="Brightness"><Slider value={d.screenBrightness} min={0.3} max={1.5} fmt={v => `${(v * 100).toFixed(0)}%`} onChange={v => updateDevice(selId!, { screenBrightness: v })} /></Row>
-                  {sel.screenshot && <>
-                    <Row label="Image X"><Slider value={d.screenOffsetX ?? 0} min={-100} max={100} step={1} fmt={v => `${v.toFixed(0)}%`} onChange={v => updateDevice(selId!, { screenOffsetX: v })} /></Row>
-                    <Row label="Image Y"><Slider value={d.screenOffsetY ?? 0} min={-100} max={100} step={1} fmt={v => `${v.toFixed(0)}%`} onChange={v => updateDevice(selId!, { screenOffsetY: v })} /></Row>
-                    <Row label="Image zoom"><Slider value={d.screenScale ?? 1} min={0.5} max={3} step={0.01} fmt={v => `${v.toFixed(2)}×`} onChange={v => updateDevice(selId!, { screenScale: v })} /></Row>
-                    <Row label="Image fit"><button onClick={() => updateDevice(selId!, { screenOffsetX: 0, screenOffsetY: 0, screenScale: 1 })} style={{ padding: '5px 8px', borderRadius: 'var(--uf-radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 10 }}>Reset</button></Row>
-                  </>}
-                </div>
-              )}
+              <Section title="Device" {...section('element')}>
+                <SwatchGroup
+                  label={`Color · ${DEVICE_COLOR_OPTIONS.find(c => c.id === d.color)?.label ?? 'Custom'}`}
+                  colors={DEVICE_COLOR_OPTIONS.map(c => c.swatch)}
+                  value={deviceSwatch}
+                  onValueChange={hex => { const option = DEVICE_COLOR_OPTIONS.find(c => c.swatch === hex); if (option) updateDevice(selId!, { color: option.id }) }}
+                />
+                {d.type === 'ipad-pro' && (
+                  <PropRow label="Orientation">
+                    <SegmentedControl label="Orientation" value={d.orientation} onValueChange={v => updateDevice(selId!, { orientation: v })} items={[{ value: 'portrait', label: 'Portrait' }, { value: 'landscape', label: 'Landscape' }]} />
+                  </PropRow>
+                )}
+                <SwitchRow label="Shadow" checked={d.showShadow} onCheckedChange={v => updateDevice(selId!, { showShadow: v })} />
+                <SwitchRow label="Reflection" checked={d.showReflection} onCheckedChange={v => updateDevice(selId!, { showReflection: v })} />
+                <SidebarSlider label="Brightness" value={d.screenBrightness} min={0.3} max={1.5} step={0.01} formatValue={pct} onValueChange={v => updateDevice(selId!, { screenBrightness: v })} />
+                {sel.screenshot && <>
+                  <SidebarSlider label="Image X" value={d.screenOffsetX ?? 0} min={-100} max={100} step={1} formatValue={v => `${v.toFixed(0)}%`} onValueChange={v => updateDevice(selId!, { screenOffsetX: v })} />
+                  <SidebarSlider label="Image Y" value={d.screenOffsetY ?? 0} min={-100} max={100} step={1} formatValue={v => `${v.toFixed(0)}%`} onValueChange={v => updateDevice(selId!, { screenOffsetY: v })} />
+                  <SidebarSlider label="Image zoom" value={d.screenScale ?? 1} min={0.5} max={3} step={0.01} formatValue={v => `${v.toFixed(2)}×`} onValueChange={v => updateDevice(selId!, { screenScale: v })} />
+                  <PropRow label="Image fit"><Button appearance="surface" size="compact" leadingIcon={<IconRefresh />} onClick={() => updateDevice(selId!, { screenOffsetX: 0, screenOffsetY: 0, screenScale: 1 })}>Reset</Button></PropRow>
+                </>}
+              </Section>
 
-              <Sep />
-
-              {/* Material presets */}
-              <SectionLabel collapsible open={open.material} onToggle={() => toggle('material')}>Material</SectionLabel>
-              {open.material && (
-                <div style={{ paddingBottom: 10 }}>
-                  <div style={{ padding: '4px 10px 0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
-                    {(Object.keys(MATERIAL_PRESETS) as MaterialPresetId[]).map(id => {
-                      const mat = MATERIAL_PRESETS[id]
-                      const isActive = (d.materialPreset ?? 'default') === id
-                      return (
-                        <button key={id} onClick={() => updateDevice(selId!, { materialPreset: id })}
-                          style={{ padding: '7px 4px', borderRadius: 'var(--uf-radius-sm)', border: isActive ? '1px solid var(--accent-border)' : '1px solid var(--border)', background: isActive ? 'var(--accent-glow)' : 'var(--surface)', color: isActive ? 'var(--accent-text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--font-mono)', textAlign: 'center', transition: 'all 0.1s' }}
-                          onMouseEnter={e => { if (!isActive) { (e.currentTarget).style.background = 'var(--surface-2)'; (e.currentTarget).style.color = 'var(--text)' } }}
-                          onMouseLeave={e => { if (!isActive) { (e.currentTarget).style.background = 'var(--surface)'; (e.currentTarget).style.color = 'var(--text-muted)' } }}
-                        >
-                          {mat.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <Sep />
+              <Section title="Material" {...section('material')}>
+                <ButtonBlock
+                  className="studio-block-3"
+                  label="Material"
+                  value={d.materialPreset ?? 'default'}
+                  onValueChange={id => updateDevice(selId!, { materialPreset: id })}
+                  items={(Object.keys(MATERIAL_PRESETS) as MaterialPresetId[]).map(id => ({ value: id, label: MATERIAL_PRESETS[id].label }))}
+                />
+              </Section>
             </>
           )}
 
           {et === 'text' && sel.textConfig && (
-            <>
-              <SectionLabel collapsible open={open.element} onToggle={() => toggle('element')}>Text</SectionLabel>
-              {open.element && (
-                <div style={{ paddingBottom: 10 }}>
-                  <div style={{ padding: '4px 14px 8px' }}>
-                    <div style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: 4 }}>Content</div>
-                    <textarea
-                      value={sel.textConfig.content}
-                      onChange={e => updateText(selId!, { content: e.target.value })}
-                      rows={3}
-                      style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--uf-radius-sm)', color: 'var(--text)', fontSize: 12, padding: '6px 8px', fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
-                      onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
-                      onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
-                    />
-                  </div>
-                  <Row label="Color"><ColorPicker value={sel.textConfig.color} onChange={v => updateText(selId!, { color: v })} /></Row>
-                  <Row label="Size">
-                    <Slider value={sel.textConfig.fontSize} min={12} max={200} step={1} fmt={v => `${v}px`} onChange={v => updateText(selId!, { fontSize: v })} />
-                  </Row>
-                  <Row label="Weight">
-                    <ChipRow options={[{ id: '300', label: 'Light' }, { id: '400', label: 'Regular' }, { id: '500', label: 'Medium' }, { id: '700', label: 'Bold' }, { id: '800', label: 'Black' }] as any} value={String(sel.textConfig.fontWeight) as any} onChange={(v: any) => updateText(selId!, { fontWeight: parseInt(v) as any })} />
-                  </Row>
-                  <Row label="Font">
-                    <ChipRow options={[{ id: 'sans', label: 'Sans' }, { id: 'serif', label: 'Serif' }, { id: 'mono', label: 'Mono' }]} value={sel.textConfig.fontFamily} onChange={v => updateText(selId!, { fontFamily: v })} />
-                  </Row>
-                  <Row label="Align">
-                    <ChipRow options={[{ id: 'left', label: 'L' }, { id: 'center', label: 'C' }, { id: 'right', label: 'R' }]} value={sel.textConfig.align} onChange={v => updateText(selId!, { align: v })} />
-                  </Row>
-                  <Row label="Tracking">
-                    <Slider value={sel.textConfig.letterSpacing} min={-0.1} max={0.3} step={0.005} fmt={v => `${v.toFixed(3)}em`} onChange={v => updateText(selId!, { letterSpacing: v })} />
-                  </Row>
-                  <Row label="Leading">
-                    <Slider value={sel.textConfig.lineHeight} min={0.8} max={2.5} step={0.05} fmt={v => v.toFixed(2)} onChange={v => updateText(selId!, { lineHeight: v })} />
-                  </Row>
-                  <Row label="Max width">
-                    <Slider value={sel.textConfig.maxWidth} min={100} max={800} step={10} fmt={v => `${v}px`} onChange={v => updateText(selId!, { maxWidth: v })} />
-                  </Row>
-                  <Row label="Opacity">
-                    <Slider value={sel.textConfig.opacity} min={0} max={1} fmt={v => `${(v * 100).toFixed(0)}%`} onChange={v => updateText(selId!, { opacity: v })} />
-                  </Row>
-                </div>
-              )}
-              <Sep />
-            </>
+            <Section title="Text" {...section('element')}>
+              <TextArea label="Content" rows={3} value={sel.textConfig.content} onChange={e => updateText(selId!, { content: e.currentTarget.value })} />
+              <ColorField label="Color" value={sel.textConfig.color} onChange={v => updateText(selId!, { color: v })} />
+              <SidebarSlider label="Size" value={sel.textConfig.fontSize} min={12} max={200} step={1} formatValue={px} onValueChange={v => updateText(selId!, { fontSize: v })} />
+              <PropRow label="Weight">
+                <SegmentedControl label="Weight" value={String(sel.textConfig.fontWeight)} onValueChange={v => updateText(selId!, { fontWeight: parseInt(v) as typeof sel.textConfig.fontWeight })} items={[{ value: '300', label: 'Lt' }, { value: '400', label: 'Rg' }, { value: '500', label: 'Md' }, { value: '700', label: 'Bd' }, { value: '800', label: 'Bk' }]} />
+              </PropRow>
+              <PropRow label="Font">
+                <SegmentedControl label="Font" value={sel.textConfig.fontFamily} onValueChange={v => updateText(selId!, { fontFamily: v })} items={[{ value: 'sans', label: 'Sans' }, { value: 'serif', label: 'Serif' }, { value: 'mono', label: 'Mono' }]} />
+              </PropRow>
+              <PropRow label="Align">
+                <SegmentedControl label="Align" value={sel.textConfig.align} onValueChange={v => updateText(selId!, { align: v })} items={[{ value: 'left', label: 'L' }, { value: 'center', label: 'C' }, { value: 'right', label: 'R' }]} />
+              </PropRow>
+              <SidebarSlider label="Tracking" value={sel.textConfig.letterSpacing} min={-0.1} max={0.3} step={0.005} formatValue={v => `${v.toFixed(3)}em`} onValueChange={v => updateText(selId!, { letterSpacing: v })} />
+              <SidebarSlider label="Leading" value={sel.textConfig.lineHeight} min={0.8} max={2.5} step={0.05} formatValue={two} onValueChange={v => updateText(selId!, { lineHeight: v })} />
+              <SidebarSlider label="Max width" value={sel.textConfig.maxWidth} min={100} max={800} step={10} formatValue={px} onValueChange={v => updateText(selId!, { maxWidth: v })} />
+              <SidebarSlider label="Opacity" value={sel.textConfig.opacity} min={0} max={1} step={0.01} formatValue={pct} onValueChange={v => updateText(selId!, { opacity: v })} />
+            </Section>
           )}
 
           {et === 'shape' && sel.shapeConfig && (
-            <>
-              <SectionLabel collapsible open={open.element} onToggle={() => toggle('element')}>Shape</SectionLabel>
-              {open.element && (
-                <div style={{ paddingBottom: 10 }}>
-                  <Row label="Color"><ColorPicker value={sel.shapeConfig.color} onChange={v => updateShape(selId!, { color: v })} /></Row>
-                  <Row label="Color 2"><ColorPicker value={sel.shapeConfig.secondaryColor} onChange={v => updateShape(selId!, { secondaryColor: v })} /></Row>
-                  <Row label="Width">
-                    <Slider value={sel.shapeConfig.width} min={40} max={800} step={4} fmt={v => `${v}px`} onChange={v => updateShape(selId!, { width: v })} />
-                  </Row>
-                  <Row label="Height">
-                    <Slider value={sel.shapeConfig.height} min={40} max={800} step={4} fmt={v => `${v}px`} onChange={v => updateShape(selId!, { height: v })} />
-                  </Row>
-                  {sel.shapeConfig.shape !== 'ring' && sel.shapeConfig.shape !== 'blob' && sel.shapeConfig.shape !== 'pedestal' && (
-                    <Row label="Radius">
-                      <Slider value={sel.shapeConfig.borderRadius} min={0} max={120} step={1} fmt={v => `${v}px`} onChange={v => updateShape(selId!, { borderRadius: v })} />
-                    </Row>
-                  )}
-                  <Row label="Blur">
-                    <Slider value={sel.shapeConfig.blur} min={0} max={40} step={0.5} fmt={v => `${v}px`} onChange={v => updateShape(selId!, { blur: v })} />
-                  </Row>
-                  <Row label="Opacity">
-                    <Slider value={sel.shapeConfig.opacity} min={0} max={1} fmt={v => `${(v * 100).toFixed(0)}%`} onChange={v => updateShape(selId!, { opacity: v })} />
-                  </Row>
-                  <Row label="Shadow"><Toggle value={sel.shapeConfig.showShadow} onChange={v => updateShape(selId!, { showShadow: v })} /></Row>
-                </div>
+            <Section title="Shape" {...section('element')}>
+              <ColorField label="Color" value={sel.shapeConfig.color} onChange={v => updateShape(selId!, { color: v })} />
+              <ColorField label="Color 2" value={sel.shapeConfig.secondaryColor} onChange={v => updateShape(selId!, { secondaryColor: v })} />
+              <SidebarSlider label="Width" value={sel.shapeConfig.width} min={40} max={800} step={4} formatValue={px} onValueChange={v => updateShape(selId!, { width: v })} />
+              <SidebarSlider label="Height" value={sel.shapeConfig.height} min={40} max={800} step={4} formatValue={px} onValueChange={v => updateShape(selId!, { height: v })} />
+              {sel.shapeConfig.shape !== 'ring' && sel.shapeConfig.shape !== 'blob' && sel.shapeConfig.shape !== 'pedestal' && (
+                <SidebarSlider label="Radius" value={sel.shapeConfig.borderRadius} min={0} max={120} step={1} formatValue={px} onValueChange={v => updateShape(selId!, { borderRadius: v })} />
               )}
-              <Sep />
-            </>
+              <SidebarSlider label="Blur" value={sel.shapeConfig.blur} min={0} max={40} step={0.5} formatValue={px} onValueChange={v => updateShape(selId!, { blur: v })} />
+              <SidebarSlider label="Opacity" value={sel.shapeConfig.opacity} min={0} max={1} step={0.01} formatValue={pct} onValueChange={v => updateShape(selId!, { opacity: v })} />
+              <SwitchRow label="Shadow" checked={sel.shapeConfig.showShadow} onCheckedChange={v => updateShape(selId!, { showShadow: v })} />
+            </Section>
           )}
         </>
       ) : (
-        <div style={{ padding: '20px 14px', textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', lineHeight: 1.7 }}>Select an object<br />to edit properties</div>
-        </div>
+        <div style={{ padding: '0 14px' }}><Hint>Select an object to edit its transform, material, and screen.</Hint></div>
       )}
 
-      {/* Scene-level: Lighting */}
-      <SectionLabel collapsible open={open.lighting} onToggle={() => toggle('lighting')}>Lighting</SectionLabel>
-      {open.lighting && (
-        <div style={{ paddingBottom: 10 }}>
-          <div style={{ padding: '0 10px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
-            {(Object.keys(LIGHTING_CONFIGS) as LightingPreset[]).map(preset => (
-              <button key={preset} onClick={() => setLighting({ preset, ...LIGHTING_RIGS[preset] })}
-                style={{ padding: '7px 6px', borderRadius: 'var(--uf-radius-sm)', border: lighting.preset === preset ? '1px solid var(--accent-border)' : '1px solid var(--border)', background: lighting.preset === preset ? 'var(--accent-glow)' : 'var(--surface)', color: lighting.preset === preset ? 'var(--accent-text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)', textAlign: 'center' }}
-                onMouseEnter={e => { if (lighting.preset !== preset) { (e.currentTarget).style.background = 'var(--surface-2)'; (e.currentTarget).style.color = 'var(--text)' } }}
-                onMouseLeave={e => { if (lighting.preset !== preset) { (e.currentTarget).style.background = 'var(--surface)'; (e.currentTarget).style.color = 'var(--text-muted)' } }}
-              >
-                {LIGHTING_CONFIGS[preset].label}
-              </button>
-            ))}
-          </div>
-          <Row label="Key"><Slider value={lighting.keyIntensity ?? 0.88} min={0} max={3} fmt={v => v.toFixed(2)} onChange={v => setLighting({ keyIntensity: v })} /></Row>
-          <Row label="Fill"><Slider value={lighting.fillIntensity ?? 0.24} min={0} max={2} fmt={v => v.toFixed(2)} onChange={v => setLighting({ fillIntensity: v })} /></Row>
-          <Row label="Rim"><Slider value={lighting.rimIntensity ?? 0.58} min={0} max={3} fmt={v => v.toFixed(2)} onChange={v => setLighting({ rimIntensity: v })} /></Row>
-          <Row label="Environment"><Slider value={lighting.environmentIntensity ?? 0.26} min={0} max={2} fmt={v => v.toFixed(2)} onChange={v => setLighting({ environmentIntensity: v })} /></Row>
-          <Row label="HDRI rotate"><Slider value={lighting.environmentRotation ?? -26} min={-180} max={180} step={1} fmt={v => `${v.toFixed(0)}°`} onChange={v => setLighting({ environmentRotation: v })} /></Row>
-          <Row label="Temperature"><Slider value={lighting.colorTemperature ?? 5200} min={2800} max={9000} step={100} fmt={v => `${v.toFixed(0)}K`} onChange={v => setLighting({ colorTemperature: v })} /></Row>
-          <Row label="Key around"><Slider value={lighting.keyAzimuth ?? -35} min={-180} max={180} step={1} fmt={v => `${v.toFixed(0)}°`} onChange={v => setLighting({ keyAzimuth: v })} /></Row>
-          <Row label="Key height"><Slider value={lighting.keyElevation ?? 42} min={5} max={85} step={1} fmt={v => `${v.toFixed(0)}°`} onChange={v => setLighting({ keyElevation: v })} /></Row>
-        </div>
-      )}
+      <Section title="Lighting" {...section('lighting')}>
+        <ButtonBlock
+          label="Lighting preset"
+          value={lighting.preset}
+          onValueChange={preset => setLighting({ preset, ...LIGHTING_RIGS[preset] })}
+          items={(Object.keys(LIGHTING_CONFIGS) as LightingPreset[]).map(preset => ({ value: preset, label: preset === 'minimal-portfolio' ? 'Minimal' : LIGHTING_CONFIGS[preset].label }))}
+        />
+        <SidebarSlider label="Key" value={lighting.keyIntensity ?? 0.88} min={0} max={3} step={0.01} formatValue={two} onValueChange={v => setLighting({ keyIntensity: v })} />
+        <SidebarSlider label="Fill" value={lighting.fillIntensity ?? 0.24} min={0} max={2} step={0.01} formatValue={two} onValueChange={v => setLighting({ fillIntensity: v })} />
+        <SidebarSlider label="Rim" value={lighting.rimIntensity ?? 0.58} min={0} max={3} step={0.01} formatValue={two} onValueChange={v => setLighting({ rimIntensity: v })} />
+        <SidebarSlider label="Environment" value={lighting.environmentIntensity ?? 0.26} min={0} max={2} step={0.01} formatValue={two} onValueChange={v => setLighting({ environmentIntensity: v })} />
+        <SidebarSlider label="HDRI rotate" value={lighting.environmentRotation ?? -26} min={-180} max={180} step={1} formatValue={deg} onValueChange={v => setLighting({ environmentRotation: v })} />
+        <SidebarSlider label="Temperature" value={lighting.colorTemperature ?? 5200} min={2800} max={9000} step={100} formatValue={v => `${v.toFixed(0)}K`} onValueChange={v => setLighting({ colorTemperature: v })} />
+        <SidebarSlider label="Key around" value={lighting.keyAzimuth ?? -35} min={-180} max={180} step={1} formatValue={deg} onValueChange={v => setLighting({ keyAzimuth: v })} />
+        <SidebarSlider label="Key height" value={lighting.keyElevation ?? 42} min={5} max={85} step={1} formatValue={deg} onValueChange={v => setLighting({ keyElevation: v })} />
+      </Section>
 
-      <Sep />
+      <Section title="Shadow" {...section('shadow')}>
+        <SidebarSlider label="Softness" value={lighting.shadowSoftness} min={10} max={160} step={1} formatValue={v => `${v.toFixed(0)}px`} onValueChange={v => setLighting({ shadowSoftness: v })} />
+        <SidebarSlider label="Opacity" value={lighting.shadowOpacity} min={0} max={1} step={0.01} formatValue={pct} onValueChange={v => setLighting({ shadowOpacity: v })} />
+        <SwitchRow label="Rim light" checked={lighting.rimLight} onCheckedChange={v => setLighting({ rimLight: v })} />
+        <SwitchRow label="Contact" checked={lighting.contactShadow} onCheckedChange={v => setLighting({ contactShadow: v })} />
+      </Section>
 
-      {/* Shadow controls */}
-      <SectionLabel collapsible open={open.shadow} onToggle={() => toggle('shadow')}>Shadow</SectionLabel>
-      {open.shadow && (
-        <div style={{ paddingBottom: 10 }}>
-          <Row label="Softness"><Slider value={lighting.shadowSoftness} min={10} max={160} step={1} fmt={v => `${v.toFixed(0)}px`} onChange={v => setLighting({ shadowSoftness: v })} /></Row>
-          <Row label="Opacity"><Slider value={lighting.shadowOpacity} min={0} max={1} fmt={v => `${(v * 100).toFixed(0)}%`} onChange={v => setLighting({ shadowOpacity: v })} /></Row>
-          <Row label="Rim light"><Toggle value={lighting.rimLight} onChange={v => setLighting({ rimLight: v })} /></Row>
-          <Row label="Contact"><Toggle value={lighting.contactShadow} onChange={v => setLighting({ contactShadow: v })} /></Row>
-        </div>
-      )}
-
-      <Sep />
-
-      {/* Background */}
-      <SectionLabel collapsible open={open.background} onToggle={() => toggle('background')}>Background</SectionLabel>
-      {open.background && (
-        <div style={{ paddingBottom: 14 }}>
-          <div style={{ padding: '4px 10px 8px', display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {BG_OPTIONS.map(opt => (
-              <button key={opt.type} onClick={() => setBackground({ type: opt.type })}
-                style={{ padding: '5px 8px', borderRadius: 'var(--uf-radius-sm)', border: background.type === opt.type ? '1px solid var(--accent-border)' : '1px solid var(--border)', background: background.type === opt.type ? 'var(--accent-glow)' : 'var(--surface)', color: background.type === opt.type ? 'var(--accent-text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 10, fontFamily: 'var(--font-mono)' }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          {background.type === 'solid' && <Row label="Color"><ColorPicker value={background.color} onChange={v => setBackground({ color: v })} /></Row>}
-          {(background.type === 'gradient-linear' || background.type === 'gradient-radial' || background.type === 'blob') && (
-            <>
-              <Row label="From"><ColorPicker value={background.gradientFrom} onChange={v => setBackground({ gradientFrom: v })} /></Row>
-              <Row label="To"><ColorPicker value={background.gradientTo} onChange={v => setBackground({ gradientTo: v })} /></Row>
-              {background.type === 'gradient-linear' && <Row label="Angle"><Slider value={background.gradientAngle} min={0} max={360} step={1} fmt={v => `${v.toFixed(0)}°`} onChange={v => setBackground({ gradientAngle: v })} /></Row>}
-              {background.type === 'blob' && <Row label="Base"><ColorPicker value={background.color} onChange={v => setBackground({ color: v })} /></Row>}
-            </>
-          )}
-        </div>
-      )}
-    </div>
+      <Section title="Background" {...section('background')}>
+        <ButtonBlock className="studio-block-3" label="Background type" value={background.type} onValueChange={type => setBackground({ type })} items={BG_OPTIONS.map(opt => ({ value: opt.type, label: opt.label }))} />
+        {background.type === 'solid' && <ColorField label="Color" value={background.color} onChange={v => setBackground({ color: v })} />}
+        {(background.type === 'gradient-linear' || background.type === 'gradient-radial' || background.type === 'blob') && (
+          <>
+            <ColorField label="From" value={background.gradientFrom} onChange={v => setBackground({ gradientFrom: v })} />
+            <ColorField label="To" value={background.gradientTo} onChange={v => setBackground({ gradientTo: v })} />
+            {background.type === 'gradient-linear' && <SidebarSlider label="Angle" value={background.gradientAngle} min={0} max={360} step={1} formatValue={deg} onValueChange={v => setBackground({ gradientAngle: v })} />}
+            {background.type === 'blob' && <ColorField label="Base" value={background.color} onChange={v => setBackground({ color: v })} />}
+          </>
+        )}
+      </Section>
+    </aside>
   )
 }

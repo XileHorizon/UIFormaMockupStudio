@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@import './kit/tokens/tokens.css';
+@import './kit/tokens/components.css';
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
+@import '@fontsource/space-mono/400.css';
+@import '@fontsource/space-mono/700.css';
 @import 'tailwindcss';
 
 @theme {
@@ -7,56 +11,62 @@
 }
 
 /*
- * UIForma Kit dark theme (XileHorizon/UIFormaKit, src/ui/tokens/tokens.css).
- * Copy the values from the Kit when its tokens change; the Studio only reads the aliases below.
+ * Studio aliases over the UIForma Kit's semantic tokens (src/kit/tokens). They follow
+ * data-uiforma-theme on <html>, so a future light/dark switcher only has to flip that attribute.
  */
 :root {
-  --uf-neutral-0: #fafafa;
-  --uf-neutral-100: #d2d3d8;
-  --uf-neutral-200: #b3b4bd;
-  --uf-neutral-300: #9799a3;
-  --uf-neutral-400: #7d808b;
-  --uf-neutral-500: #666874;
-  --uf-neutral-600: #4e505a;
-  --uf-neutral-700: #3c3e46;
-  --uf-neutral-800: #2c2d34;
-  --uf-neutral-900: #1e1f23;
-  --uf-neutral-1000: #121212;
-  --uf-primary-100: #c6d1ff;
-  --uf-primary-200: #9faeff;
-  --uf-primary-300: #7f8cff;
-  --uf-primary-400: #6669fb;
-  --uf-primary-500: #534de1;
-  --uf-primary-600: #412ec2;
-  --uf-primary-800: #280084;
-  --uf-primary-900: #1b005f;
-  --uf-secondary-100: #f2d163;
-  --uf-secondary-200: #d6b100;
-  --uf-danger-300: #ee6094;
-  --uf-success-300: #00b392;
-  --uf-radius-sm: 4px;
-  --uf-radius-md: 8px;
+  --bg: var(--uf-color-background-page);
+  --panel: var(--uf-color-background-subtle);
+  --header: var(--uf-color-background-raised);
+  --surface: var(--uf-color-background-raised);
+  --surface-2: color-mix(in srgb, var(--uf-color-text-primary) 8%, var(--uf-color-background-raised));
+  --border: color-mix(in srgb, var(--uf-color-text-primary) 13%, var(--uf-color-background-subtle));
+  --border-subtle: color-mix(in srgb, var(--uf-color-text-primary) 6%, var(--uf-color-background-subtle));
+  --text: var(--uf-color-text-primary);
+  --text-muted: var(--uf-color-text-secondary);
+  --text-dim: var(--uf-color-text-disabled);
+  --accent: var(--uf-color-action-primary-default);
+  --accent-hover: var(--uf-color-action-primary-hover);
+  --accent-glow: var(--uf-color-action-primary-subtle);
+  --accent-border: var(--uf-color-action-primary-border);
+  --accent-text: var(--uf-color-action-primary-text);
+  --accent-strong: var(--uf-color-primary-600);
+  --danger: var(--uf-color-error-border);
+  --success: var(--uf-color-success-300);
+}
 
-  /* Studio aliases */
-  --bg: var(--uf-neutral-1000);
-  --panel: var(--uf-neutral-900);
-  --header: var(--uf-neutral-800);
-  --surface: var(--uf-neutral-800);
-  --surface-2: var(--uf-neutral-700);
-  --border: var(--uf-neutral-700);
-  --border-subtle: #26272c;
-  --text: var(--uf-neutral-0);
-  --text-muted: var(--uf-neutral-300);
-  --text-dim: var(--uf-neutral-500);
-  --accent: var(--uf-primary-400);
-  --accent-hover: var(--uf-primary-300);
-  --accent-glow: var(--uf-primary-900);
-  --accent-border: var(--uf-primary-500);
-  --accent-text: var(--uf-primary-100);
-  --accent-strong: var(--uf-primary-600);
-  --highlight: var(--uf-secondary-200);
-  --danger: var(--uf-danger-300);
-  --success: var(--uf-success-300);
+/*
+ * Studio density. The Kit is drawn for a 1920px canvas; the editor panels are ~300px wide,
+ * so the Studio scales the Kit down by overriding its component tokens (never its classes).
+ */
+.studio-ui {
+  --uf-button-font-size: 12px;
+  --uf-button-height-compact: 30px;
+  --uf-button-padding-x: 10px;
+  --uf-button-gap: 6px;
+  --uf-button-icon-size: 16px;
+  --uf-segmented-item-height: 26px;
+  --uf-segmented-item-padding-x: 8px;
+  --uf-segmented-item-font: 400 12px/normal var(--uf-font-control);
+  --uf-button-block-item-height: 30px;
+  --uf-settings-section-title-font: 700 15px/normal var(--uf-font-control);
+  --uf-settings-section-toggle-icon-size: 20px;
+  --uf-settings-section-padding-x: 14px;
+  --uf-settings-section-gap: 8px;
+  --uf-sidebar-slider-label-width: 88px;
+  --uf-sidebar-slider-label-font: 400 12px/normal var(--uf-font-control);
+  --uf-sidebar-slider-value-font: 400 11px/normal var(--uf-font-control);
+  --uf-text-field-input-font: 400 12px/normal var(--uf-font-control);
+  --uf-text-field-padding-x: 8px;
+  --uf-text-field-padding-y: 4px;
+  --uf-text-field-supporting-font-size: 11px;
+  --uf-type-field-label: 400 11px/1.2 var(--uf-font-control);
+  --uf-swatch-group-label-font: 400 12px/normal var(--uf-font-control);
+  --uf-select-height: 30px;
+  --uf-select-padding-x: 8px;
+  --uf-select-font: 400 12px/1 var(--uf-font-control);
+  --uf-select-gap: 4px;
+  --uf-type-label: 400 11px/1.2 var(--uf-font-control);
 }
 
 html, body, #root {
@@ -90,12 +100,12 @@ body {
 
 /* Checkerboard for transparent bg */
 .checkerboard {
-  background-color: var(--uf-neutral-900);
+  background-color: var(--uf-color-neutral-900);
   background-image:
-    linear-gradient(45deg, var(--uf-neutral-800) 25%, transparent 25%),
-    linear-gradient(-45deg, var(--uf-neutral-800) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, var(--uf-neutral-800) 75%),
-    linear-gradient(-45deg, transparent 75%, var(--uf-neutral-800) 75%);
+    linear-gradient(45deg, var(--uf-color-neutral-800) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--uf-color-neutral-800) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--uf-color-neutral-800) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--uf-color-neutral-800) 75%);
   background-size: 16px 16px;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
 }
@@ -118,7 +128,7 @@ input[type='range']::-webkit-slider-thumb {
   width: 14px;
   height: 14px;
   background: var(--accent);
-  border: 2px solid var(--uf-neutral-0);
+  border: 2px solid var(--uf-color-neutral-0);
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.1s;
@@ -131,7 +141,7 @@ input[type='range']::-moz-range-thumb {
   height: 14px;
   background: var(--accent);
   border-radius: 50%;
-  border: 2px solid var(--uf-neutral-0);
+  border: 2px solid var(--uf-color-neutral-0);
   cursor: pointer;
 }
 
@@ -142,8 +152,70 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 
 /* Viewport navigation cluster */
-.view-nav { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: var(--uf-radius-md); background: color-mix(in srgb, var(--uf-neutral-900) 82%, transparent); border: 1px solid var(--border); backdrop-filter: blur(10px); }
-.view-nav button { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 30px; height: 28px; padding: 0 8px; border: 0; border-radius: var(--uf-radius-sm); background: transparent; color: var(--text-muted); font: 11px var(--font-mono); cursor: pointer; transition: background .1s, color .1s; }
-.view-nav button:hover { background: var(--surface-2); color: var(--text); }
-.view-nav button[aria-pressed='true'] { background: var(--accent-strong); color: #fff; }
-.view-nav hr { width: 1px; height: 18px; margin: 0 3px; border: 0; background: var(--border); }
+.view-nav { display: flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid var(--border); border-radius: var(--uf-radius-md); background: color-mix(in srgb, var(--panel) 85%, transparent); backdrop-filter: blur(10px); }
+.view-nav .uf-segmented-control { border-color: transparent; background: transparent; padding: 0; }
+
+/* Studio compositions (components/studio-ui.tsx) */
+.studio-panel { display: flex; flex-direction: column; gap: 20px; padding: 16px 0 24px; background: var(--panel); overflow-x: hidden; overflow-y: auto; }
+.studio-panel > .studio-section + .studio-section { padding-top: 16px; border-top: 1px solid var(--border-subtle); }
+.studio-prop-row { display: flex; align-items: center; gap: var(--uf-sidebar-slider-gap); min-height: 26px; }
+.studio-prop-row__label { flex: none; min-width: var(--uf-sidebar-slider-label-width); color: var(--uf-sidebar-slider-label-color); font: var(--uf-sidebar-slider-label-font); white-space: nowrap; }
+.studio-prop-row__control { display: flex; flex: 1; min-width: 0; justify-content: flex-end; }
+.studio-prop-row__control > .uf-segmented-control { flex: 1; }
+.studio-prop-row__control > .uf-segmented-control > button { flex: 1; }
+.studio-color-field { display: flex; flex: 1; align-items: center; gap: 6px; min-width: 0; }
+.studio-color-field__chip { position: relative; flex: none; width: 32px; height: 22px; border-radius: var(--uf-color-chip-radius); box-shadow: inset 0 0 0 1px var(--border); cursor: pointer; }
+.studio-color-field__chip input { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.studio-color-field > .uf-text-field { flex: 1; min-width: 0; }
+.studio-hint { margin: 0; color: var(--text-dim); font: 400 11px/1.4 var(--uf-font-control); }
+.studio-block-3 { --uf-button-block-columns: 3; }
+.studio-block-1 { --uf-button-block-columns: 1; }
+.studio-section .uf-sidebar-slider__control { max-width: none; }
+.studio-section .uf-swatch-group__swatches { gap: 6px; }
+.studio-add-list { display: grid; gap: 4px; }
+.studio-add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.uf-button.studio-add { justify-content: flex-start; width: 100%; color: var(--text-muted); }
+.uf-button.studio-add svg { color: var(--accent-hover); }
+.studio-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; padding: 14px 10px; border: 1px dashed var(--uf-color-action-primary-border); border-radius: var(--uf-radius-md); background: transparent; color: var(--text-muted); font-family: var(--uf-font-control); cursor: pointer; transition: background var(--uf-motion-fast); }
+.studio-drop:hover:not(:disabled) { background: var(--accent-glow); color: var(--text); }
+.studio-drop:disabled { opacity: .45; cursor: default; }
+.studio-drop > svg { width: 20px; height: 20px; color: var(--accent-hover); }
+.studio-drop__title { font-size: 12px; }
+.studio-drop__meta { color: var(--text-dim); font-size: 10px; }
+.studio-drop__preview { width: 100%; height: 64px; overflow: hidden; border-radius: var(--uf-radius-sm); background: #000; }
+.studio-drop__preview img, .studio-drop__preview video { width: 100%; height: 100%; object-fit: cover; }
+.studio-modifier { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: var(--uf-radius-md); background: var(--surface); }
+.studio-modifier__header { display: flex; justify-content: space-between; color: var(--accent-hover); font: 400 12px/1.2 var(--uf-font-control); }
+.studio-modifier__header span { color: var(--text-dim); font-size: 11px; }
+.uf-button.studio-toolbar-button { --uf-button-surface-border: transparent; color: var(--text-muted); }
+.uf-button.studio-toolbar-button:hover { color: var(--text); }
+.uf-button.studio-toolbar-button[aria-pressed='true'] { color: var(--accent-text); background: var(--accent-glow); }
+.uf-button.studio-toolbar-button.is-danger:hover { color: var(--danger); }
+.uf-button.studio-toolbar-button svg { width: 15px; height: 15px; }
+.studio-ui { --uf-text-field-tall-min-height: 72px; --uf-text-field-tall-font: 400 13px/1.45 var(--uf-font-body); }
+.studio-section .uf-text-field, .studio-modal .uf-text-field { min-width: 0; }
+.studio-section .uf-text-field--tall textarea { width: 100%; }
+.studio-color-field input:not([type='color']) { width: 100%; }
+.studio-color-field > .uf-text-field { width: 0; }
+
+/* Modals */
+.studio-modal-backdrop { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--bg) 72%, transparent); backdrop-filter: blur(4px); }
+.studio-modal { display: flex; flex-direction: column; max-width: calc(100vw - 32px); max-height: 88vh; overflow: hidden; border: 1px solid var(--accent-border); border-radius: var(--uf-radius-lg); background: var(--panel); }
+.studio-modal__header { display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 12px 16px; border-bottom: 1px solid var(--border-subtle); }
+.studio-modal__header h2 { margin: 0; color: var(--uf-settings-section-title-color); font: var(--uf-settings-section-title-font); }
+.studio-modal__body { display: flex; flex-direction: column; gap: 18px; min-height: 0; padding: 16px 0; overflow-y: auto; }
+.studio-modal__body > .studio-field, .studio-modal__body > .studio-alert { margin: 0 16px; }
+.studio-modal__body > .studio-section { padding-top: 14px; border-top: 1px solid var(--border-subtle); }
+.studio-modal__footer { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border-subtle); }
+.studio-field { display: flex; flex-direction: column; gap: 8px; }
+.studio-field__label { color: var(--uf-sidebar-slider-label-color); font: var(--uf-sidebar-slider-label-font); }
+.studio-alert { padding: 8px 10px; border: 1px solid var(--uf-color-error-border); border-radius: var(--uf-radius-sm); background: var(--uf-color-error-container); color: var(--uf-color-error-text); font: 400 11px/1.4 var(--uf-font-control); }
+.studio-template-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px; overflow-y: auto; }
+.studio-template { display: flex; flex-direction: column; padding: 0; overflow: hidden; border: 1px solid var(--accent-border); border-radius: var(--uf-radius-md); background: var(--surface); color: var(--text); text-align: left; cursor: pointer; transition: background var(--uf-motion-fast), transform var(--uf-motion-fast); }
+.studio-template:hover { background: var(--accent-glow); transform: translateY(-2px); }
+.studio-template__preview { position: relative; display: block; height: 100px; overflow: hidden; }
+.studio-template__copy { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 12px; }
+.studio-template__copy strong { color: var(--accent-text); font: 700 12px/1.3 var(--uf-font-control); }
+.studio-template__copy span { color: var(--text-muted); font: 400 11px/1.4 var(--uf-font-body); }
+.studio-template__copy small { align-self: flex-start; margin-top: 4px; padding: 2px 6px; border-radius: var(--uf-radius-xs); background: var(--accent-glow); color: var(--accent-text); font: 400 10px/1.4 var(--uf-font-control); }
+.studio-modal .uf-sidebar-slider__control { max-width: none; }

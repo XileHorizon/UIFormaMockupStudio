@@ -1,0 +1,135 @@
+@import "@fontsource/space-mono/400.css";
+@import "@fontsource/space-mono/700.css";
+
+.uf-button {
+  width: fit-content;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--uf-button-gap);
+  padding: var(--uf-button-padding-y-compact) var(--uf-button-padding-x);
+  border: var(--uf-button-border-width) solid transparent;
+  border-radius: var(--uf-button-radius);
+  font-family: var(--uf-button-font-family);
+  font-weight: var(--uf-button-font-weight);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--uf-button-transition-duration) ease,
+    border-color var(--uf-button-transition-duration) ease,
+    color var(--uf-button-transition-duration) ease;
+}
+
+.uf-button--compact {
+  height: var(--uf-button-height-compact);
+  padding-block: var(--uf-button-padding-y-compact);
+  font-size: var(--uf-button-font-size);
+}
+.uf-button--standard {
+  height: var(--uf-button-height-standard);
+  padding-block: var(--uf-button-padding-y-standard);
+  font-size: var(--uf-button-font-size);
+}
+.uf-button--huge {
+  height: var(--uf-button-height-huge);
+  padding: var(--uf-button-padding-y-huge) var(--uf-button-padding-x-huge);
+  font-size: var(--uf-button-font-size-huge);
+  font-weight: var(--uf-button-font-weight-huge);
+}
+
+.uf-button--rounded {
+  border-radius: var(--uf-button-radius-rounded);
+}
+.uf-button--primary {
+  color: var(--uf-button-primary-text);
+  background: var(--uf-button-primary-background);
+}
+.uf-button--primary:hover {
+  background: var(--uf-button-primary-background-hover);
+}
+.uf-button--primary:active {
+  background: var(--uf-button-primary-background-pressed);
+}
+.uf-button--surface {
+  color: var(--uf-button-surface-text);
+  background: transparent;
+  border-color: var(--uf-button-surface-border);
+}
+.uf-button--surface:hover {
+  background: var(--uf-button-surface-background-hover);
+}
+.uf-button--surface:active {
+  background: var(--uf-button-surface-background-pressed);
+}
+.uf-button--secondary {
+  color: var(--uf-button-secondary-text);
+  background: var(--uf-button-secondary-background);
+  border-color: var(--uf-button-secondary-border);
+}
+.uf-button--secondary:hover {
+  background: var(--uf-button-secondary-background-hover);
+  border-color: var(--uf-button-secondary-background-hover);
+}
+.uf-button--secondary:active {
+  background: var(--uf-button-secondary-background-pressed);
+  border-color: var(--uf-button-secondary-background-pressed);
+}
+.uf-button--tertiary {
+  color: var(--uf-button-tertiary-text);
+  background: var(--uf-button-tertiary-background);
+}
+.uf-button--tertiary:hover {
+  background: var(--uf-button-tertiary-background-hover);
+}
+.uf-button--tertiary:active {
+  background: var(--uf-button-tertiary-background-pressed);
+}
+.uf-button--link {
+  color: var(--uf-button-link-text);
+  background: transparent;
+}
+.uf-button--link:hover {
+  color: var(--uf-button-link-text-hover);
+  text-decoration: underline;
+}
+.uf-button--link:active {
+  color: var(--uf-button-link-text-pressed);
+  text-decoration: underline;
+}
+.uf-button:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+.uf-button:disabled {
+  opacity: var(--uf-state-disabled-opacity);
+  cursor: not-allowed;
+}
+.uf-button > svg {
+  width: var(--uf-button-icon-size);
+  height: var(--uf-button-icon-size);
+  flex: none;
+}
+.uf-button--huge > svg {
+  width: var(--uf-button-icon-size-huge);
+  height: var(--uf-button-icon-size-huge);
+}
+.uf-button[data-icon-only="true"] {
+  gap: 0;
+}
+.uf-button[data-icon-only="true"] > :only-child {
+  flex: none;
+}
+.uf-button__spinner {
+  width: var(--uf-button-spinner-size);
+  height: var(--uf-button-spinner-size);
+  border: var(--uf-button-spinner-border-width) solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--uf-radius-full);
+  animation: uf-spin var(--uf-button-spinner-duration) linear infinite;
+}
+@keyframes uf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

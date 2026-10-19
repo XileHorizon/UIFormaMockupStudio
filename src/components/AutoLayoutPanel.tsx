@@ -1,52 +1,80 @@
+import { IconArrowBackUp, IconArrowForwardUp, IconFlipVertical, IconRotate360, IconTrash } from '@tabler/icons-react'
 import { useEditor } from '../store'
 import type { LayoutModifier, MirrorLayoutSettings, PatternAxis, RadialLayoutSettings } from '../types'
+import { Button, FieldRow, Select, SidebarSlider } from '../kit'
+import { Hint } from './studio-ui'
 
-const fieldStyle = { width: '100%', padding: 5, borderRadius: 5, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', fontSize: 10 }
-const buttonStyle = { padding: '6px 8px', borderRadius: 5, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 10 }
+const AXES: PatternAxis[] = ['x', 'y', 'z']
 
-function Slider({ label, value, min, max, step = 1, onChange }: { label: string; value: number; min: number; max: number; step?: number; onChange: (value: number) => void }) {
-  return <label style={{ display: 'grid', gridTemplateColumns: '56px 1fr 38px', gap: 5, alignItems: 'center', marginTop: 7, fontSize: 9, color: 'var(--text-dim)' }}>
-    <span>{label}</span><input type="range" value={value} min={min} max={max} step={step} onChange={event => onChange(Number(event.target.value))} /><span style={{ textAlign: 'right' }}>{value}</span>
-  </label>
+function ModifierCard({ title, sources, children }: { title: string; sources: number; children: React.ReactNode }) {
+  return (
+    <div className="studio-modifier">
+      <div className="studio-modifier__header"><strong>{title}</strong><span>{sources} source{sources === 1 ? '' : 's'}</span></div>
+      {children}
+    </div>
+  )
 }
 
 function ModifierEditor({ modifier }: { modifier: LayoutModifier }) {
   const { updateLayoutModifier, removeLayoutModifier } = useEditor()
   const setSettings = (settings: LayoutModifier['settings']) => updateLayoutModifier(modifier.id, { settings })
+  const remove = <Button appearance="surface" size="compact" leadingIcon={<IconTrash />} onClick={() => removeLayoutModifier(modifier.id)}>Remove</Button>
   if (modifier.type === 'radial') {
     const settings = modifier.settings as RadialLayoutSettings
-    return <div style={{ marginTop: 7, padding: 8, border: '1px solid var(--border)', borderRadius: 7, background: 'var(--surface)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--accent)' }}><strong>Radius / Radial</strong><span>{modifier.sourceIds.length} source{modifier.sourceIds.length === 1 ? '' : 's'}</span></div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginTop: 7 }}>
-        <label style={{ fontSize: 9, color: 'var(--text-dim)' }}>Axis<select style={fieldStyle} value={settings.axis} onChange={event => setSettings({ ...settings, axis: event.target.value as PatternAxis })}><option value="x">X</option><option value="y">Y</option><option value="z">Z</option></select></label>
-        <label style={{ fontSize: 9, color: 'var(--text-dim)' }}>Orientation<select style={fieldStyle} value={settings.orientation} onChange={event => setSettings({ ...settings, orientation: event.target.value as 'follow' | 'preserve' })}><option value="follow">Rotate with path</option><option value="preserve">Keep original</option></select></label>
-      </div>
-      <Slider label="Count" value={settings.count} min={1} max={128} onChange={count => setSettings({ ...settings, count })} />
-      <Slider label="Angle" value={settings.angle} min={-360} max={360} onChange={angle => setSettings({ ...settings, angle })} />
-      <Slider label="Start" value={settings.startAngle} min={-1440} max={1440} onChange={startAngle => setSettings({ ...settings, startAngle })} />
-      <Slider label="Radius +" value={settings.radiusOffset} min={-500} max={1000} onChange={radiusOffset => setSettings({ ...settings, radiusOffset })} />
-      <Slider label="Rotation" value={settings.rotationOffset ?? 0} min={-360} max={360} onChange={rotationOffset => setSettings({ ...settings, rotationOffset })} />
-      <Slider label="3D Tilt" value={settings.tiltAmount ?? 0} min={-180} max={180} onChange={tiltAmount => setSettings({ ...settings, tiltAmount })} />
-      <div style={{ display: 'flex', gap: 5, marginTop: 7 }}><button style={buttonStyle} onClick={() => setSettings({ ...settings, direction: settings.direction === 1 ? -1 : 1 })}>{settings.direction === 1 ? '↻ Clockwise' : '↺ Counterclockwise'}</button><button style={{ ...buttonStyle, color: '#ef7777', marginLeft: 'auto' }} onClick={() => removeLayoutModifier(modifier.id)}>Remove</button></div>
-    </div>
+    const slider = (label: string, key: 'count' | 'angle' | 'startAngle' | 'radiusOffset' | 'rotationOffset' | 'tiltAmount', min: number, max: number) => (
+      <SidebarSlider label={label} value={settings[key] ?? 0} min={min} max={max} step={1} formatValue={v => v.toFixed(0)} onValueChange={value => setSettings({ ...settings, [key]: value })} />
+    )
+    return (
+      <ModifierCard title="Radial" sources={modifier.sourceIds.length}>
+        <FieldRow>
+          <Select label="Axis" value={settings.axis} onChange={event => setSettings({ ...settings, axis: event.currentTarget.value as PatternAxis })} options={AXES.map(axis => ({ value: axis, label: axis.toUpperCase() }))} />
+          <Select label="Orientation" value={settings.orientation} onChange={event => setSettings({ ...settings, orientation: event.currentTarget.value as 'follow' | 'preserve' })} options={[{ value: 'follow', label: 'Follow path' }, { value: 'preserve', label: 'Keep original' }]} />
+        </FieldRow>
+        {slider('Count', 'count', 1, 128)}
+        {slider('Angle', 'angle', -360, 360)}
+        {slider('Start', 'startAngle', -1440, 1440)}
+        {slider('Radius +', 'radiusOffset', -500, 1000)}
+        {slider('Rotation', 'rotationOffset', -360, 360)}
+        {slider('3D tilt', 'tiltAmount', -180, 180)}
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'space-between' }}>
+          <Button appearance="surface" size="compact" leadingIcon={settings.direction === 1 ? <IconArrowForwardUp /> : <IconArrowBackUp />} onClick={() => setSettings({ ...settings, direction: settings.direction === 1 ? -1 : 1 })}>
+            {settings.direction === 1 ? 'Clockwise' : 'Counter'}
+          </Button>
+          {remove}
+        </div>
+      </ModifierCard>
+    )
   }
   const settings = modifier.settings as MirrorLayoutSettings
-  return <div style={{ marginTop: 7, padding: 8, border: '1px solid var(--border)', borderRadius: 7, background: 'var(--surface)' }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--accent)' }}><strong>Mirror</strong><span>{modifier.sourceIds.length} source{modifier.sourceIds.length === 1 ? '' : 's'}</span></div>
-    <div style={{ display: 'flex', gap: 5, marginTop: 8 }}>{(['x', 'y', 'z'] as PatternAxis[]).map(axis => <button key={axis} style={{ ...buttonStyle, flex: 1, borderColor: settings.axes.includes(axis) ? 'var(--accent)' : 'var(--border)', color: settings.axes.includes(axis) ? 'var(--accent-text)' : 'var(--text-muted)' }} onClick={() => setSettings({ ...settings, axes: settings.axes.includes(axis) ? settings.axes.filter(value => value !== axis) : [...settings.axes, axis] })}>{axis.toUpperCase()} {settings.axes.includes(axis) ? '✓' : ''}</button>)}</div>
-    <button style={{ ...buttonStyle, color: '#ef7777', marginTop: 8, width: '100%' }} onClick={() => removeLayoutModifier(modifier.id)}>Remove Mirror</button>
-  </div>
+  return (
+    <ModifierCard title="Mirror" sources={modifier.sourceIds.length}>
+      <div className="uf-segmented-control" role="group" aria-label="Mirror axes">
+        {AXES.map(axis => {
+          const on = settings.axes.includes(axis)
+          return (
+            <button key={axis} type="button" aria-pressed={on} data-state={on ? 'checked' : 'unchecked'} style={{ flex: 1 }}
+              onClick={() => setSettings({ ...settings, axes: on ? settings.axes.filter(value => value !== axis) : [...settings.axes, axis] })}>
+              {axis.toUpperCase()}
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{remove}</div>
+    </ModifierCard>
+  )
 }
 
 export default function AutoLayoutPanel() {
   const { state, addLayoutModifier } = useEditor()
   const selectedCount = state.selectedIds?.length ?? (state.selectedId ? 1 : 0)
-  return <div style={{ padding: '0 10px 10px' }}>
-    <div style={{ fontSize: 9, color: 'var(--text-dim)', marginBottom: 7 }}>{selectedCount ? `${selectedCount} selected · Shift-click to add sources` : 'Select one or more source objects'}</div>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
-      <button disabled={!selectedCount} style={{ ...buttonStyle, opacity: selectedCount ? 1 : .45 }} onClick={() => addLayoutModifier('radial')}>◎ Radius</button>
-      <button disabled={!selectedCount} style={{ ...buttonStyle, opacity: selectedCount ? 1 : .45 }} onClick={() => addLayoutModifier('mirror')}>◁▷ Mirror</button>
-    </div>
-    {(state.layouts ?? []).map(modifier => <ModifierEditor key={modifier.id} modifier={modifier} />)}
-  </div>
+  return (
+    <>
+      <Hint>{selectedCount ? `${selectedCount} selected · Shift-click to add sources` : 'Select one or more source objects'}</Hint>
+      <div className="studio-add-grid">
+        <Button appearance="surface" size="compact" leadingIcon={<IconRotate360 />} disabled={!selectedCount} onClick={() => addLayoutModifier('radial')}>Radial</Button>
+        <Button appearance="surface" size="compact" leadingIcon={<IconFlipVertical />} disabled={!selectedCount} onClick={() => addLayoutModifier('mirror')}>Mirror</Button>
+      </div>
+      {(state.layouts ?? []).map(modifier => <ModifierEditor key={modifier.id} modifier={modifier} />)}
+    </>
+  )
 }
